@@ -1,0 +1,28 @@
+[gd_scene load_steps=3 format=3 uid="uid://bmggxyum5jxti"]
+
+[ext_resource type="Script" uid="uid://bagdcr36u55qe" path="res://scripts/board.gd" id="1_tx6nw"]
+[ext_resource type="Texture2D" uid="uid://bjajbg6do3opp" path="res://textures/graph_paper_02.png" id="2_tx6nw"]
+
+[node name="Board" type="SubViewportContainer"]
+clip_contents = true
+custom_minimum_size = Vector2(512, 512)
+offset_right = 512.0
+offset_bottom = 512.0
+size_flags_horizontal = 4
+stretch = true
+script = ExtResource("1_tx6nw")
+
+[node name="BoardViewport" type="SubViewport" parent="."]
+handle_input_locally = false
+physics_object_picking = true
+render_target_update_mode = 4
+
+[node name="GridRect" type="TextureRect" parent="BoardViewport"]
+unique_name_in_owner = true
+offset_right = 256.0
+offset_bottom = 256.0
+texture = ExtResource("2_tx6nw")
+stretch_mode = 1
+
+[node name="BoardCamera" type="Camera2D" parent="BoardViewport"]
+unique_name_in_owner = true

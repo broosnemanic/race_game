@@ -1,0 +1,37 @@
+[gd_scene load_steps=2 format=3 uid="uid://5j6keqmi6dvl"]
+
+[ext_resource type="Script" uid="uid://7vm85tj3unsh" path="res://scripts/game_control.gd" id="1_tu4ud"]
+
+[node name="GameControl" type="Node2D"]
+script = ExtResource("1_tu4ud")
+
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
+
+[node name="TopBox" type="VBoxContainer" parent="CanvasLayer"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MenuBox" type="HBoxContainer" parent="CanvasLayer/TopBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="CentralBox" type="HBoxContainer" parent="CanvasLayer/TopBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="PanelContainer" type="PanelContainer" parent="CanvasLayer/TopBox/CentralBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 1
+
+[node name="BoardContainer" type="MarginContainer" parent="CanvasLayer/TopBox/CentralBox/PanelContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="FooterBox" type="HBoxContainer" parent="CanvasLayer/TopBox"]
+layout_mode = 2
+size_flags_vertical = 3
