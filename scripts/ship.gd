@@ -3,7 +3,7 @@ class_name Ship
 
 
 signal move_selected(a_ship: Ship)
-signal selected(a_ship: Ship)
+#signal selected(a_ship: Ship)
 
 
 @onready var sprite: Sprite2D = $Sprite
@@ -13,6 +13,7 @@ signal selected(a_ship: Ship)
 var player: int
 var health: int
 var velocity: Vector2i = Vector2i.ZERO
+var path: Array[Vector2i] = []
 var max_accelerations: Dictionary[Vector2i, int]		# Max acc available in each of 8 cardinal directions
 var markers: Array[Marker] = []							# Displays possible next move; rebuilt as needed
 var moves: Array[Vector2i] = [Vector2i.ZERO]			# Index: turn#; value: velocity
@@ -21,6 +22,12 @@ var pointed_marker: Marker								# Marker, if any, mouse is over
 var marker_pointer: Line2D
 var is_bot: bool = false
 var marker_arrow: ArrowHead
+var line_squares: Array[Sprite2D] = []
+var descrete_path: DescretePath = DescretePath.new()
+
+
+const LIGHT_TILE: Texture2D = preload("uid://crkmjka1gcgkc")
+
 
 # Helper to convert to grid coords
 func coords() -> Vector2i:
@@ -48,8 +55,7 @@ func _ready() -> void:
 
 func on_area_entered(a_area: Area2D) -> void:
 	if a_area.is_in_group("ship"):
-		print_debug(a_area.get_parent())
-
+		pass
 
 
 func _process(_delta: float) -> void:
@@ -82,23 +88,20 @@ func setup_default_acc() -> void:
 
 func _mouse_enter() -> void:
 	is_mouse_over = true
-	print_debug("mouse over ship")
 
 
 func _mouse_exit() -> void:
 	is_mouse_over = false
-	print_debug("mouse exited")
 
 
-func _input(event: InputEvent) -> void:
-	pass
+#func _input(event: InputEvent) -> void:
+	#pass
 	#if not is_mouse_over: return
 	#if event is InputEventMouseButton:
 		#var t_even: InputEventMouseButton = event as InputEventMouseButton
 		#if t_even.button_index == MOUSE_BUTTON_LEFT:
 			#if t_even.pressed:
 				#selected.emit(self)
-				#print_debug("ship clicked")
 
 
 #func set_is_selected(a_is_selected: bool) -> void:
@@ -148,6 +151,18 @@ func point_at_marker(a_marker: Marker) -> void:
 	marker_pointer.points[1] = a_marker.position
 	marker_arrow.position = marker_pointer.points[1]
 	marker_arrow.point_along_coords(Vector2.ZERO, a_marker.position)
+	# Grid line
+	var t_coords: Array[Vector2i] = line_coords(Vector2i.ZERO, a_marker.coord + velocity)
+	clear_line()
+	path = t_coords
+	
+	#draw_squares(t_coords)
+	descrete_path.clear_line()
+	descrete_path = DescretePath.new()
+	add_child(descrete_path)
+	descrete_path.draw_points(t_coords)
+	
+	
 
 
 func display_markers(a_is_displayed: bool) -> void:
@@ -161,9 +176,9 @@ func display_markers(a_is_displayed: bool) -> void:
 func on_marker_selected(a_marker: Marker) -> void:
 	velocity += a_marker.coord
 	moves.append(velocity)
+	path = line_coords(Vector2i.ZERO, velocity)
 	move_selected.emit(self)
 	destroy_markers()
-	#print_debug(a_marker)
 
 
 func max_acc_at(a_dir: Vector2i) -> Vector2i:
@@ -185,3 +200,74 @@ func available_destinations() -> Array[Vector2i]:
 	for i_dir: Vector2i in Constants.directions:
 		t_coords.append(velocity + i_dir)
 	return t_coords
+
+
+#region Grid Line
+# Utility for drawing grid-style line
+# Applies list of moves from distributed_directions to a start and end coord
+func line_coords(a_start: Vector2i, a_end: Vector2i) -> Array[Vector2i]:
+	var t_coord: Vector2i = a_start
+	var t_coords: Array[Vector2i] = [t_coord]
+	var t_steps: Array[Vector2i] = distributed_directions(a_start, a_end)
+	for i_step: Vector2i in t_steps:
+		t_coord += i_step
+		t_coords.append(t_coord)
+	return t_coords
+
+
+# Utility for drawing grid-style line
+# Returns list of unit vectors which draw a reasonble straight line
+func distributed_directions(a_start: Vector2i, a_end: Vector2i) -> Array[Vector2i]:
+	var t_directions: Array[Vector2i] = []
+	var t_counts: Array[int] = direction_counts(a_start, a_end)
+	var t_sign_x: int = 1 if a_end.x - a_start.x >= 0 else -1
+	var t_sign_y: int = 1 if a_end.y - a_start.y >= 0 else -1
+	var t_total: int = t_counts[0] + t_counts[1] + t_counts[2]
+	var t_diag: Vector2i = Vector2i(t_sign_x, t_sign_y)
+	var t_x: Vector2i = Vector2i(t_sign_x, 0)
+	var t_y: Vector2i = Vector2i(0, t_sign_y)
+	t_directions.resize(t_total)
+	t_directions.fill(t_diag)
+	var t_step: float
+	if t_counts[0] > 0:
+		t_step = t_total as float / t_counts[0]
+		for i_index: int in range(0, t_counts[0]):
+				t_directions[floori(i_index * t_step)] = t_x
+	if t_counts[1] > 0:
+		t_step = t_total as float / t_counts[1]
+		for i_index: int in range(0, t_counts[1]):
+				t_directions[floori(i_index * t_step)] = t_y
+	return t_directions
+
+
+
+# Utility for drawing grid-style line
+# [x dir count, y dir count, diag dir count]
+func direction_counts(a_start: Vector2i, a_end: Vector2i) -> Array[int]:
+	var t_delta: Vector2i = abs(a_end - a_start)
+	var t_diag: int = mini(t_delta.x, t_delta.y)
+	var t_x: int = maxi(0, t_delta.x - t_diag)
+	var t_y: int = maxi(0, t_delta.y - t_diag)
+	return [t_x, t_y, t_diag]
+
+
+func clear_line() -> void:
+	for i_square: Sprite2D in line_squares:
+		i_square.queue_free()
+	line_squares = []
+
+
+
+func draw_squares(a_coords: Array[Vector2i]) -> void:
+	clear_line()
+	for i_coord: Vector2i in a_coords:
+		var t_sprite: Sprite2D = Sprite2D.new()
+		t_sprite.texture = LIGHT_TILE
+		t_sprite.z_index = 10
+		t_sprite.scale = 0.25 * Vector2.ONE
+		add_child(t_sprite)
+		t_sprite.position = i_coord * Constants.ORIGINAL_SQUARE_SIZE
+		line_squares.append(t_sprite)
+	
+
+#endregion

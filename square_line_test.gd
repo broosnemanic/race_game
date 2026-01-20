@@ -42,7 +42,6 @@ func _input(event: InputEvent) -> void:
 			selected_coord = t_coord
 			dark_tile.position = position_from_coord(t_coord)
 			draw_squares(line_coords(Vector2i.ZERO, selected_coord))
-		#prints(t_event.position, t_coord)
 
 
 

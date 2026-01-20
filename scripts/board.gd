@@ -9,6 +9,7 @@ signal ship_move_selected(a_ship: Ship)
 @onready var board_viewport: SubViewport = $BoardViewport
 
 const TILE_0680: Texture2D = preload("uid://c413je2hltv8q")
+const LIGHT_TILE: Texture2D = preload("uid://crkmjka1gcgkc")
 const CROSSHAIR_TEX_00: Texture2D = preload("uid://b01dx1v65uhom")
 const TARGET_MARKER: Texture2D = preload("uid://cf85b3rajkbrk")
 const DOT: Texture2D = preload("uid://dup115kj27cgg")
@@ -94,7 +95,7 @@ func add_ship(a_ship: Ship) -> void:
 	ships.append(a_ship)
 	grid_rect.add_child(a_ship)
 	a_ship.z_index = Constants.SHIP_Z + a_ship.player
-	a_ship.selected.connect(on_ship_selected)
+	#a_ship.selected.connect(on_ship_selected)
 	a_ship.move_selected.connect(on_move_selected)
 	#a_ship.position = snapped_pos(board_camera.offset)
 	#a_ship.create_markers()
@@ -116,14 +117,6 @@ func select_next_ship() -> void:
 
 func on_move_selected(a_ship: Ship) -> void:
 	ship_move_selected.emit(a_ship)
-	#var t_coord: Vector2i = a_ship.coords()
-	#a_ship.destroy_markers()
-	#draw_dot(t_coord)
-	#var t_end: Vector2 = a_ship.position + Constants.ORIGINAL_SQUARE_SIZE * a_ship.velocity
-	#var t_tween: Tween = get_tree().create_tween()
-	#t_tween.tween_property(a_ship, "position", t_end, Constants.MOVE_TIME)
-	#t_tween.finished.connect(ship_move_completed.emit.bind(a_ship))
-	#draw_trace(t_coord, a_ship.coords() + a_ship.velocity, 0)
 
 
 
@@ -170,8 +163,23 @@ func extend_line(a_end: Vector2, a_line: Line2D) -> void:
 
 func fade_traces() -> void:
 	for i_trace: Line2D in trace_register:
-		#i_trace.modulate.a *= Constants.FADE_FACTOR
 		i_trace.modulate.a -= Constants.FADE_INCR
+	remove_old_traces()
+
+
+func remove_old_traces() -> void:
+	for i_index: int in range(trace_register.size()):
+		var t_trace: Line2D = trace_register[i_index]
+		if t_trace.modulate.a <= 0.0:
+			trace_register[i_index] = null
+			t_trace.queue_free()
+	var t_register: Array[Line2D] = []
+	for i_trace: Line2D in trace_register:
+		if i_trace != null:
+			t_register.append(i_trace)
+	trace_register = t_register
+	
+	
 
 
 func fade_dots() -> void:
@@ -194,3 +202,51 @@ func draw_dot(a_coord: Vector2i, a_player: int) -> void:
 func on_ship_selected(a_ship: Ship) -> void:
 	selected_ship = a_ship
 	a_ship.create_markers()
+
+
+# Utility for drawing grid-style line
+# Applies list of moves from distributed_directions to a start and end coord
+func line_coords(a_start: Vector2i, a_end: Vector2i) -> Array[Vector2i]:
+	var t_coord: Vector2i = a_start
+	var t_coords: Array[Vector2i] = [t_coord]
+	var t_steps: Array[Vector2i] = distributed_directions(a_start, a_end)
+	for i_step: Vector2i in t_steps:
+		t_coord += i_step
+		t_coords.append(t_coord)
+	return t_coords
+
+
+# Utility for drawing grid-style line
+# Returns list of unit vectors which draw a reasonble straight line
+func distributed_directions(a_start: Vector2i, a_end: Vector2i) -> Array[Vector2i]:
+	var t_directions: Array[Vector2i] = []
+	var t_counts: Array[int] = direction_counts(a_start, a_end)
+	var t_sign_x: int = 1 if a_end.x - a_start.x >= 0 else -1
+	var t_sign_y: int = 1 if a_end.y - a_start.y >= 0 else -1
+	var t_total: int = t_counts[0] + t_counts[1] + t_counts[2]
+	var t_diag: Vector2i = Vector2i(t_sign_x, t_sign_y)
+	var t_x: Vector2i = Vector2i(t_sign_x, 0)
+	var t_y: Vector2i = Vector2i(0, t_sign_y)
+	t_directions.resize(t_total)
+	t_directions.fill(t_diag)
+	var t_step: float
+	if t_counts[0] > 0:
+		t_step = t_total as float / t_counts[0]
+		for i_index: int in range(0, t_counts[0]):
+				t_directions[floori(i_index * t_step)] = t_x
+	if t_counts[1] > 0:
+		t_step = t_total as float / t_counts[1]
+		for i_index: int in range(0, t_counts[1]):
+				t_directions[floori(i_index * t_step)] = t_y
+	return t_directions
+
+
+
+# Utility for drawing grid-style line
+# [x dir count, y dir count, diag dir count]
+func direction_counts(a_start: Vector2i, a_end: Vector2i) -> Array[int]:
+	var t_delta: Vector2i = abs(a_end - a_start)
+	var t_diag: int = mini(t_delta.x, t_delta.y)
+	var t_x: int = maxi(0, t_delta.x - t_diag)
+	var t_y: int = maxi(0, t_delta.y - t_diag)
+	return [t_x, t_y, t_diag]

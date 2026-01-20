@@ -18,7 +18,8 @@ func _ready() -> void:
 	board_container.add_child(board)
 	await get_tree().process_frame
 	board.square_size = 64.0
-	board.grid_size = Vector2i(16, 16)
+	#board.grid_size = Vector2i(16, 16)
+	board.grid_size = Vector2i(64, 64)
 	board.center_camera()
 	board.board_camera.zoom = Vector2(0.5, 0.5)
 	board.ship_move_completed.connect(on_ship_move_completed)
