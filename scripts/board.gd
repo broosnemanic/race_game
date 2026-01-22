@@ -20,7 +20,7 @@ var selected_ship: Ship
 var mouse_pos: Vector2		# Relative to SubViewportContainer not viewport position
 var trace_register: Array[Line2D]
 var dot_register: Array[Sprite2D]
-
+var descrete_path_register: Array[DescretePath] = []
 
 func _ready() -> void:
 	crosshair = Sprite2D.new()
@@ -94,7 +94,7 @@ func coords_from_pos(a_pos: Vector2) -> Vector2i:
 func add_ship(a_ship: Ship) -> void:
 	ships.append(a_ship)
 	grid_rect.add_child(a_ship)
-	a_ship.z_index = Constants.SHIP_Z + a_ship.player
+	a_ship.z_index = Constants.SHIP_Z_INDEX + a_ship.player
 	#a_ship.selected.connect(on_ship_selected)
 	a_ship.move_selected.connect(on_move_selected)
 	#a_ship.position = snapped_pos(board_camera.offset)
@@ -123,8 +123,41 @@ func on_move_selected(a_ship: Ship) -> void:
 func move_ships() -> void:
 	fade_traces()
 	fade_dots()
+	preserve_ship_paths()
 	for i_ship: Ship in ships:
 		move_ship(i_ship)
+
+
+func preserve_ship_paths() -> void:
+	for i_ship: Ship in ships:
+		var t_path: DescretePath = DescretePath.new()
+		t_path.coords = i_ship.descrete_path.coords
+		t_path.color = Constants.player_color[i_ship.player]
+		t_path.draw_points(t_path.coords)
+		descrete_path_register.append(t_path)
+		grid_rect.add_child(t_path)
+		t_path.global_position = i_ship.descrete_path.global_position
+		i_ship.descrete_path.clear_line()
+	fade_descrete_paths()
+
+
+func fade_descrete_paths() -> void:
+	for i_path: DescretePath in descrete_path_register:
+		i_path.fade(Constants.FADE_INCR)
+	remove_old_paths()
+
+
+func remove_old_paths() -> void:
+	for i_index: int in range(descrete_path_register.size()):
+		var t_path: DescretePath = descrete_path_register[i_index]
+		if t_path.alpha() <= 0.0:
+			descrete_path_register[i_index] = null
+			t_path.queue_free()
+	var t_register: Array[DescretePath] = []
+	for i_path: DescretePath in descrete_path_register:
+		if i_path != null:
+			t_register.append(i_path)
+	descrete_path_register = t_register
 
 
 # This will have to be reworked as it does not take collisions in to account

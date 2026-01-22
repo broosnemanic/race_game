@@ -36,6 +36,7 @@ func new_game(a_player_count: int, a_bot_count: int) -> void:
 		ships.append(t_ship)
 		t_ship.set_player(i_index)
 		board.add_ship(t_ship)
+		t_ship.z_index = Constants.SHIP_Z_INDEX
 		t_ship.position = start_pos_from_player(t_ship.player)
 	board.on_ship_selected(ships[0])
 	ship_ready_report.resize(ships.size())

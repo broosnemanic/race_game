@@ -51,6 +51,7 @@ func _ready() -> void:
 	setup_arrowhead()
 	area.area_entered.connect(on_area_entered)
 	area.add_to_group("ship")
+	z_as_relative = false
 
 
 func on_area_entered(a_area: Area2D) -> void:
@@ -159,6 +160,7 @@ func point_at_marker(a_marker: Marker) -> void:
 	#draw_squares(t_coords)
 	descrete_path.clear_line()
 	descrete_path = DescretePath.new()
+	descrete_path.color = Constants.player_color[player]
 	add_child(descrete_path)
 	descrete_path.draw_points(t_coords)
 	
