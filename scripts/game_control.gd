@@ -66,7 +66,8 @@ func on_ship_move_completed(a_ship: Ship) -> void:
 func on_ship_move_selected(a_ship: Ship) -> void:
 	ship_ready_report[a_ship.player] = true
 	if is_all_ships_ready():
-		board.move_ships()
+		#board.move_ships()
+		board.move_ships_alt()
 		reset_ship_ready_report()
 		await get_tree().create_timer(Constants.MOVE_TIME).timeout
 		start_turn()

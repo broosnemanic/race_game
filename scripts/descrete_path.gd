@@ -24,6 +24,10 @@ func direction_counts(a_start: Vector2i, a_end: Vector2i) -> Array[int]:
 	return [t_x, t_y, t_diag]
 
 
+# Count of descrete points
+func count() -> int:
+	return coords.size()
+
 
 func clear_line() -> void:
 	for i_square: Sprite2D in point_markers:
@@ -47,6 +51,51 @@ func draw_points(a_coords: Array[Vector2i]) -> void:
 	if not point_markers.is_empty():
 		point_markers.back().modulate.a = 1.0
 		point_markers.back().scale = 0.25 * Vector2i.ONE
+
+
+
+func draw_from_endpoints(a_start: Vector2i, a_end: Vector2i) -> void:
+	var t_coords: Array[Vector2i] = line_coords(a_start, a_end)
+	draw_points(t_coords)
+
+
+# Utility for drawing grid-style line
+# Applies list of moves from distributed_directions to a start and end coord
+func line_coords(a_start: Vector2i, a_end: Vector2i) -> Array[Vector2i]:
+	var t_coord: Vector2i = a_start
+	var t_coords: Array[Vector2i] = [t_coord]
+	var t_steps: Array[Vector2i] = distributed_directions(a_start, a_end)
+	for i_step: Vector2i in t_steps:
+		t_coord += i_step
+		t_coords.append(t_coord)
+	return t_coords
+
+
+# Utility for drawing grid-style line
+# Returns list of unit vectors which draw a reasonble straight line
+func distributed_directions(a_start: Vector2i, a_end: Vector2i) -> Array[Vector2i]:
+	var t_directions: Array[Vector2i] = []
+	var t_counts: Array[int] = direction_counts(a_start, a_end)
+	var t_sign_x: int = 1 if a_end.x - a_start.x >= 0 else -1
+	var t_sign_y: int = 1 if a_end.y - a_start.y >= 0 else -1
+	var t_total: int = t_counts[0] + t_counts[1] + t_counts[2]
+	var t_diag: Vector2i = Vector2i(t_sign_x, t_sign_y)
+	var t_x: Vector2i = Vector2i(t_sign_x, 0)
+	var t_y: Vector2i = Vector2i(0, t_sign_y)
+	t_directions.resize(t_total)
+	t_directions.fill(t_diag)
+	var t_step: float
+	if t_counts[0] > 0:
+		t_step = t_total as float / t_counts[0]
+		for i_index: int in range(0, t_counts[0]):
+				t_directions[floori(i_index * t_step)] = t_x
+	if t_counts[1] > 0:
+		t_step = t_total as float / t_counts[1]
+		for i_index: int in range(0, t_counts[1]):
+				t_directions[floori(i_index * t_step)] = t_y
+	return t_directions
+
+
 
 
 

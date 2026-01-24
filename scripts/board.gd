@@ -121,11 +121,36 @@ func on_move_selected(a_ship: Ship) -> void:
 
 
 func move_ships() -> void:
+	move_ships_alt()
 	fade_traces()
 	fade_dots()
 	preserve_ship_paths()
 	for i_ship: Ship in ships:
 		move_ship(i_ship)
+
+
+func move_ships_alt() -> void:
+	fade_traces()
+	fade_dots()
+	preserve_ship_paths()
+	var t_duration: float = 0.5
+	# Find tic count
+	var t_tic_count: int = 0
+	for i_ship: Ship in ships:
+		t_tic_count = maxi(t_tic_count, i_ship.descrete_path.count())
+	# Loop through tics
+	for i_tic: int in range(1, t_tic_count):
+		for i_ship: Ship in ships:
+			# Check that i_ship has a remaining move to make
+			if i_tic < i_ship.descrete_path.count():
+				# Create tween to move i_ship the next step
+				var t_coords: Array[Vector2i] = i_ship.descrete_path.coords
+				var t_coord: Vector2i = t_coords[i_tic] - t_coords[i_tic - 1]
+				move_ship_to(i_ship, t_coord, t_duration)
+		# Create await timer with duration of move
+		await get_tree().create_timer(t_duration).timeout
+		# We want both ships to move once per tic (if it has a move remaining)
+		# Then move on to next tic
 
 
 func preserve_ship_paths() -> void:
@@ -170,6 +195,13 @@ func move_ship(a_ship: Ship) -> void:
 	t_tween.tween_property(a_ship, "position", t_end, Constants.MOVE_TIME)
 	t_tween.finished.connect(ship_move_completed.emit.bind(a_ship))
 	draw_trace(t_coord, a_ship.coords() + a_ship.velocity, 0)
+
+
+
+func move_ship_to(a_ship: Ship, a_coord: Vector2i, a_duration: float) -> void:
+	var t_end: Vector2 = a_ship.position + Constants.ORIGINAL_SQUARE_SIZE * a_coord
+	var t_tween: Tween = get_tree().create_tween()
+	t_tween.tween_property(a_ship, "position", t_end, a_duration)
 
 
 
