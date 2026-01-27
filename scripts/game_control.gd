@@ -12,7 +12,6 @@ var ship_ready_report: Array[bool] = []
 var turn_index: int
 
 
-
 func _ready() -> void:
 	board = board_prefab.instantiate()
 	board_container.add_child(board)
@@ -45,11 +44,9 @@ func new_game(a_player_count: int, a_bot_count: int) -> void:
 
 func start_turn() -> void:
 	board.select_first_ship()
-	#board.fade_traces()
-	#board.fade_dots()
 
 
-
+# Placeholder func to distribute starting positions
 func start_pos_from_player(a_player: int) -> Vector2:
 	var t_coord: Vector2i = Vector2i(a_player, 0)
 	return board.pos_from_coords(t_coord) + board.board_camera.offset
@@ -69,7 +66,9 @@ func on_ship_move_selected(a_ship: Ship) -> void:
 		#board.move_ships()
 		board.move_ships_alt()
 		reset_ship_ready_report()
-		await get_tree().create_timer(Constants.MOVE_TIME).timeout
+		#await get_tree().create_timer(Constants.MOVE_TIME).timeout
+		# TODO: this needs to be a signal set off when ship movement is complete
+		await board.all_moves_completed
 		start_turn()
 	else:
 		board.select_next_ship()

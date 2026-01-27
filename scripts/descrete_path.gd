@@ -2,9 +2,11 @@ extends Node2D
 class_name DescretePath
 
 
-var coords: Array[Vector2i] = []
-var point_markers: Array[Sprite2D] = []
-var color: Color = Color.FUCHSIA
+var coords: Array[Vector2i] = []				# Int coord of points
+var point_markers: Array[Sprite2D] = []			# Graphical representation of points
+var color: Color = Color.FUCHSIA				# Default point_marker color
+var tic: int = 0								# Current place in coords list
+var padded_steps: Array[Vector2i]				# Unit steps composing entire path, padded to a length with ZERO steps 
 
 const POINT_TEXTURE: Texture2D = preload("uid://dup115kj27cgg")
 const ENDPOINT_TEXTURE: Texture2D = preload("uid://dipjdkw86aunk")
@@ -97,6 +99,18 @@ func distributed_directions(a_start: Vector2i, a_end: Vector2i) -> Array[Vector2
 
 
 
+func populate_padded_steps(a_path_length: int, a_start: Vector2i, a_end: Vector2i) -> void:
+	var t_steps: Array[Vector2i] = distributed_directions(a_start, a_end)
+	var t_padded: Array[Vector2i] = []
+	t_padded.resize(a_path_length)
+	t_padded.fill(Vector2i.ZERO)
+	var t_step: float = a_path_length as float / t_steps.size()
+	for i_index: int in range(0, t_steps.size()):
+			t_padded[floori(i_index * t_step)] = t_steps[i_index]
+	padded_steps = t_padded
+	pass
+	
+	
 
 
 func fade(a_fraction: float) -> void:

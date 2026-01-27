@@ -3,6 +3,7 @@ class_name Board
 
 signal ship_move_completed(a_ship: Ship)
 signal ship_move_selected(a_ship: Ship)
+signal all_moves_completed()
 
 @onready var board_camera: Camera2D = %BoardCamera
 @onready var grid_rect: TextureRect = %GridRect
@@ -139,18 +140,34 @@ func move_ships_alt() -> void:
 	for i_ship: Ship in ships:
 		t_tic_count = maxi(t_tic_count, i_ship.descrete_path.count())
 	# Loop through tics
-	for i_tic: int in range(1, t_tic_count):
+	for i_ship: Ship in ships:
+		var t_path: DescretePath = i_ship.descrete_path
+		t_path.populate_padded_steps(t_tic_count, t_path.coords[0], t_path.coords[-1])
+		#t_bool_register[i_ship.player] = distributed_bools(t_tic_count, i_ship.descrete_path.coords.size())
+	for i_tic: int in range(0, t_tic_count):
 		for i_ship: Ship in ships:
-			# Check that i_ship has a remaining move to make
-			if i_tic < i_ship.descrete_path.count():
+
 				# Create tween to move i_ship the next step
-				var t_coords: Array[Vector2i] = i_ship.descrete_path.coords
-				var t_coord: Vector2i = t_coords[i_tic] - t_coords[i_tic - 1]
+				#var t_coords: Array[Vector2i] = i_ship.descrete_path.padded_steps[i_tic]
+				var t_coord: Vector2i = i_ship.descrete_path.padded_steps[i_tic]
 				move_ship_to(i_ship, t_coord, t_duration)
 		# Create await timer with duration of move
 		await get_tree().create_timer(t_duration).timeout
 		# We want both ships to move once per tic (if it has a move remaining)
 		# Then move on to next tic
+	all_moves_completed.emit()
+
+
+# Returns array filled with false, with a_count of true distributed evenly
+func distributed_bools(a_total: int, a_count: int) -> Array[bool]:
+	var t_array: Array[bool] = []
+	t_array.resize(a_total)
+	t_array.fill(false)
+	var t_step: float = a_total as float / a_count
+	for i_index: int in range(0, a_count):
+			t_array[floori(i_index * t_step)] = true
+	return t_array
+
 
 
 func preserve_ship_paths() -> void:
