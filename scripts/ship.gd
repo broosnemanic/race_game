@@ -1,10 +1,7 @@
 extends Node2D
 class_name Ship
 
-
 signal move_selected(a_ship: Ship)
-#signal selected(a_ship: Ship)
-
 
 @onready var sprite: Sprite2D = $Sprite
 @onready var area: Area2D = $Area
@@ -25,7 +22,6 @@ var marker_arrow: ArrowHead
 var line_squares: Array[Sprite2D] = []
 var descrete_path: DescretePath = DescretePath.new()
 
-
 const LIGHT_TILE: Texture2D = preload("uid://crkmjka1gcgkc")
 
 
@@ -35,6 +31,7 @@ func coords() -> Vector2i:
 	t_pos.x = (position.x / Constants.ORIGINAL_SQUARE_SIZE) as int
 	t_pos.y = (position.y / Constants.ORIGINAL_SQUARE_SIZE) as int
 	return t_pos
+
 
 func _ready() -> void:
 	setup_default_acc()
@@ -59,18 +56,13 @@ func on_area_entered(a_area: Area2D) -> void:
 		pass
 
 
-func _process(_delta: float) -> void:
-	return
-
-
 func setup_arrowhead() -> void:
 	marker_arrow = ArrowHead.new()
 	marker_arrow.width = 20.0
 	marker_arrow.height = 20.0
 	marker_arrow.offset = Vector2(0.0, 20.0)
 	marker_pointer.add_child(marker_arrow)
-	
-	
+
 
 func handle_marker_pointer() -> void:
 	if pointed_marker != null:
@@ -78,7 +70,6 @@ func handle_marker_pointer() -> void:
 		point_at_marker(pointed_marker)
 	else:
 		marker_pointer.visible = false
-
 
 
 # Default 1 acc in all directions
@@ -95,21 +86,6 @@ func _mouse_exit() -> void:
 	is_mouse_over = false
 
 
-#func _input(event: InputEvent) -> void:
-	#pass
-	#if not is_mouse_over: return
-	#if event is InputEventMouseButton:
-		#var t_even: InputEventMouseButton = event as InputEventMouseButton
-		#if t_even.button_index == MOUSE_BUTTON_LEFT:
-			#if t_even.pressed:
-				#selected.emit(self)
-
-
-#func set_is_selected(a_is_selected: bool) -> void:
-	#if a_is_selected:
-		#selected.emit(self)
-
-
 func create_markers() -> void:
 	markers = []
 	add_new_marker(Vector2i.ZERO)
@@ -120,12 +96,10 @@ func create_markers() -> void:
 			add_new_marker(t_acc)
 
 
-
 func destroy_markers() -> void:
 	for i_marker: Marker in markers:
 		i_marker.queue_free()
 	markers = []
-
 
 
 func add_new_marker(a_acc: Vector2i) -> Marker:
@@ -141,11 +115,9 @@ func add_new_marker(a_acc: Vector2i) -> Marker:
 		return t_marker
 
 
-
 func on_mouse_enter_marker(a_marker: Marker) -> void:
 	point_at_marker(a_marker)
 	pointed_marker = a_marker
-
 
 
 func point_at_marker(a_marker: Marker) -> void:
@@ -160,8 +132,6 @@ func point_at_marker(a_marker: Marker) -> void:
 	add_child(descrete_path)
 	descrete_path.draw_from_endpoints(Vector2i.ZERO, a_marker.coord + velocity)
 	path = descrete_path.coords
-	
-	
 
 
 func display_markers(a_is_displayed: bool) -> void:

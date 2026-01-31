@@ -1,7 +1,6 @@
 extends Node2D
 class_name DescretePath
 
-
 var coords: Array[Vector2i] = []				# Int coord of points
 var point_markers: Array[Sprite2D] = []			# Graphical representation of points
 var color: Color = Color.FUCHSIA				# Default point_marker color
@@ -15,6 +14,7 @@ const ENDPOINT_TEXTURE: Texture2D = preload("uid://dipjdkw86aunk")
 func _init() -> void:
 	z_index = Constants.PATH_Z_INDEX
 	z_as_relative = false
+
 
 # Utility for drawing grid-style line
 # [x dir count, y dir count, diag dir count]
@@ -37,7 +37,6 @@ func clear_line() -> void:
 	point_markers = []
 
 
-
 func draw_points(a_coords: Array[Vector2i]) -> void:
 	clear_line()
 	coords = a_coords
@@ -53,7 +52,6 @@ func draw_points(a_coords: Array[Vector2i]) -> void:
 	if not point_markers.is_empty():
 		point_markers.back().modulate.a = 1.0
 		point_markers.back().scale = 0.25 * Vector2i.ONE
-
 
 
 func draw_from_endpoints(a_start: Vector2i, a_end: Vector2i) -> void:
@@ -98,7 +96,6 @@ func distributed_directions(a_start: Vector2i, a_end: Vector2i) -> Array[Vector2
 	return t_directions
 
 
-
 func populate_padded_steps(a_path_length: int, a_start: Vector2i, a_end: Vector2i) -> void:
 	var t_steps: Array[Vector2i] = distributed_directions(a_start, a_end)
 	var t_padded: Array[Vector2i] = []
@@ -108,9 +105,6 @@ func populate_padded_steps(a_path_length: int, a_start: Vector2i, a_end: Vector2
 	for i_index: int in range(0, t_steps.size()):
 			t_padded[floori(i_index * t_step)] = t_steps[i_index]
 	padded_steps = t_padded
-	pass
-	
-	
 
 
 func fade(a_fraction: float) -> void:

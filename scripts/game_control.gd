@@ -17,14 +17,13 @@ func _ready() -> void:
 	board_container.add_child(board)
 	await get_tree().process_frame
 	board.square_size = 64.0
-	#board.grid_size = Vector2i(16, 16)
 	board.grid_size = Vector2i(64, 64)
 	board.center_camera()
 	board.board_camera.zoom = Vector2(0.5, 0.5)
-	board.ship_move_completed.connect(on_ship_move_completed)
 	board.ship_move_selected.connect(on_ship_move_selected)
 	new_game(2, 0)
 	await get_tree().process_frame
+
 
 
 func new_game(a_player_count: int, a_bot_count: int) -> void:
@@ -52,22 +51,11 @@ func start_pos_from_player(a_player: int) -> Vector2:
 	return board.pos_from_coords(t_coord) + board.board_camera.offset
 
 
-func on_ship_move_completed(a_ship: Ship) -> void:
-	pass
-	# Check to see if all ships have registered a move
-	# If so, then move all ships
-	# Reset
-
-
-
 func on_ship_move_selected(a_ship: Ship) -> void:
 	ship_ready_report[a_ship.player] = true
 	if is_all_ships_ready():
-		#board.move_ships()
-		board.move_ships_alt()
+		board.move_ships()
 		reset_ship_ready_report()
-		#await get_tree().create_timer(Constants.MOVE_TIME).timeout
-		# TODO: this needs to be a signal set off when ship movement is complete
 		await board.all_moves_completed
 		start_turn()
 	else:

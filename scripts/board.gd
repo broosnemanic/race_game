@@ -31,14 +31,10 @@ func _ready() -> void:
 	crosshair.visible = true
 
 
-
 func _process(_delta: float) -> void:
 	var t_pos: Vector2 = grid_rect.get_local_mouse_position()
 	if t_pos != mouse_pos:
 		mouse_pos = t_pos
-		#crosshair.position = snapped_pos(mouse_pos)
-
-
 
 
 func get_mouse_pos() -> Vector2:
@@ -96,10 +92,7 @@ func add_ship(a_ship: Ship) -> void:
 	ships.append(a_ship)
 	grid_rect.add_child(a_ship)
 	a_ship.z_index = Constants.SHIP_Z_INDEX + a_ship.player
-	#a_ship.selected.connect(on_ship_selected)
 	a_ship.move_selected.connect(on_move_selected)
-	#a_ship.position = snapped_pos(board_camera.offset)
-	#a_ship.create_markers()
 
 
 func select_ship(a_ship: Ship) -> void:
@@ -120,17 +113,7 @@ func on_move_selected(a_ship: Ship) -> void:
 	ship_move_selected.emit(a_ship)
 
 
-
 func move_ships() -> void:
-	move_ships_alt()
-	fade_traces()
-	fade_dots()
-	preserve_ship_paths()
-	for i_ship: Ship in ships:
-		move_ship(i_ship)
-
-
-func move_ships_alt() -> void:
 	fade_traces()
 	fade_dots()
 	preserve_ship_paths()
@@ -143,19 +126,48 @@ func move_ships_alt() -> void:
 	for i_ship: Ship in ships:
 		var t_path: DescretePath = i_ship.descrete_path
 		t_path.populate_padded_steps(t_tic_count, t_path.coords[0], t_path.coords[-1])
-		#t_bool_register[i_ship.player] = distributed_bools(t_tic_count, i_ship.descrete_path.coords.size())
 	for i_tic: int in range(0, t_tic_count):
 		for i_ship: Ship in ships:
-
 				# Create tween to move i_ship the next step
-				#var t_coords: Array[Vector2i] = i_ship.descrete_path.padded_steps[i_tic]
 				var t_coord: Vector2i = i_ship.descrete_path.padded_steps[i_tic]
 				move_ship_to(i_ship, t_coord, t_duration)
 		# Create await timer with duration of move
 		await get_tree().create_timer(t_duration).timeout
 		# We want both ships to move once per tic (if it has a move remaining)
 		# Then move on to next tic
+		# TODO: find and resolve collisions
+		var t_report: Dictionary[Vector2i, ArrayInt] = collision_report(i_tic)
+		for i_key: Vector2i in t_report.keys():
+			var t_players: ArrayInt = t_report[i_key]
+			if t_players.i.size() > 1:
+				print("collision!")
 	all_moves_completed.emit()
+
+
+# Key is coord of collision; item is list of players
+func collision_report(a_tic: int) -> Dictionary[Vector2i, ArrayInt]:
+	var t_report: Dictionary[Vector2i, ArrayInt] = {}
+	for i_ship: Ship in ships:
+			var t_coord: Vector2i = coords_from_position(i_ship.position)
+			# TODO: we are looking at steps but should be looking at board coords
+			if not t_report.has(t_coord): t_report[t_coord] = ArrayInt.new()
+			t_report[t_coord].i.append(i_ship.player)
+	return t_report
+
+
+func coords_from_position(a_pos: Vector2) -> Vector2i:
+	var t_x: int = floori(a_pos.x / Constants.ORIGINAL_SQUARE_SIZE as float)
+	var t_y: int = floori(a_pos.y / Constants.ORIGINAL_SQUARE_SIZE as float)
+	return Vector2i(t_x, t_y)
+
+
+
+
+# Given a tic, returns list of ships (by player) that are sharing a square
+# Assumes populate_padded_steps has been called on all ships
+func collision_list(a_tic: int) -> Array[ArrayInt]:
+	return []
+
 
 
 # Returns array filled with false, with a_count of true distributed evenly
@@ -167,7 +179,6 @@ func distributed_bools(a_total: int, a_count: int) -> Array[bool]:
 	for i_index: int in range(0, a_count):
 			t_array[floori(i_index * t_step)] = true
 	return t_array
-
 
 
 func preserve_ship_paths() -> void:
@@ -260,15 +271,12 @@ func remove_old_traces() -> void:
 		if i_trace != null:
 			t_register.append(i_trace)
 	trace_register = t_register
-	
-	
 
 
 func fade_dots() -> void:
 	for i_dot: Sprite2D in dot_register:
 		#i_dot.modulate.a *= Constants.FADE_FACTOR
 		i_dot.modulate.a -= Constants.FADE_INCR
-
 
 
 func draw_dot(a_coord: Vector2i, a_player: int) -> void:
@@ -279,56 +287,8 @@ func draw_dot(a_coord: Vector2i, a_player: int) -> void:
 	t_dot.modulate = Constants.player_color[a_player]
 	t_dot.position = Constants.ORIGINAL_SQUARE_SIZE * a_coord
 	dot_register.append(t_dot)
-	
+
 
 func on_ship_selected(a_ship: Ship) -> void:
 	selected_ship = a_ship
 	a_ship.create_markers()
-
-
-# Utility for drawing grid-style line
-# Applies list of moves from distributed_directions to a start and end coord
-func line_coords(a_start: Vector2i, a_end: Vector2i) -> Array[Vector2i]:
-	var t_coord: Vector2i = a_start
-	var t_coords: Array[Vector2i] = [t_coord]
-	var t_steps: Array[Vector2i] = distributed_directions(a_start, a_end)
-	for i_step: Vector2i in t_steps:
-		t_coord += i_step
-		t_coords.append(t_coord)
-	return t_coords
-
-
-# Utility for drawing grid-style line
-# Returns list of unit vectors which draw a reasonble straight line
-func distributed_directions(a_start: Vector2i, a_end: Vector2i) -> Array[Vector2i]:
-	var t_directions: Array[Vector2i] = []
-	var t_counts: Array[int] = direction_counts(a_start, a_end)
-	var t_sign_x: int = 1 if a_end.x - a_start.x >= 0 else -1
-	var t_sign_y: int = 1 if a_end.y - a_start.y >= 0 else -1
-	var t_total: int = t_counts[0] + t_counts[1] + t_counts[2]
-	var t_diag: Vector2i = Vector2i(t_sign_x, t_sign_y)
-	var t_x: Vector2i = Vector2i(t_sign_x, 0)
-	var t_y: Vector2i = Vector2i(0, t_sign_y)
-	t_directions.resize(t_total)
-	t_directions.fill(t_diag)
-	var t_step: float
-	if t_counts[0] > 0:
-		t_step = t_total as float / t_counts[0]
-		for i_index: int in range(0, t_counts[0]):
-				t_directions[floori(i_index * t_step)] = t_x
-	if t_counts[1] > 0:
-		t_step = t_total as float / t_counts[1]
-		for i_index: int in range(0, t_counts[1]):
-				t_directions[floori(i_index * t_step)] = t_y
-	return t_directions
-
-
-
-# Utility for drawing grid-style line
-# [x dir count, y dir count, diag dir count]
-func direction_counts(a_start: Vector2i, a_end: Vector2i) -> Array[int]:
-	var t_delta: Vector2i = abs(a_end - a_start)
-	var t_diag: int = mini(t_delta.x, t_delta.y)
-	var t_x: int = maxi(0, t_delta.x - t_diag)
-	var t_y: int = maxi(0, t_delta.y - t_diag)
-	return [t_x, t_y, t_diag]
