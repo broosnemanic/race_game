@@ -134,6 +134,16 @@ func point_at_marker(a_marker: Marker) -> void:
 	path = descrete_path.coords
 
 
+func point_at_velocity() -> void:
+	var t_pos: Vector2 = velocity * Constants.ORIGINAL_SQUARE_SIZE
+	marker_pointer.points[1] = t_pos
+	marker_arrow.position = t_pos
+	marker_arrow.point_along_coords(Vector2.ZERO, t_pos)
+	
+
+
+
+
 func display_markers(a_is_displayed: bool) -> void:
 	for i_index: int in range(markers.size()):
 		var t_marker: Marker = markers[i_index]

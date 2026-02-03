@@ -13,7 +13,8 @@ const directions: Array[Vector2i] = [	Vector2i(1, 0),
 
 
 const player_color: Dictionary[int, Color] = {	0: Color("blue"),
-												1: Color("red")
+												1: Color("red"),
+												2: Color("00a07aff")
 											}
 
 const MOVE_TIME: float = 0.5

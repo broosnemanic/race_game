@@ -126,7 +126,7 @@ func move_ships() -> void:
 	for i_ship: Ship in ships:
 		var t_path: DescretePath = i_ship.descrete_path
 		t_path.populate_padded_steps(t_tic_count, t_path.coords[0], t_path.coords[-1])
-	for i_tic: int in range(0, t_tic_count):
+	for i_tic: int in range(0, t_tic_count - 1):
 		for i_ship: Ship in ships:
 				# Create tween to move i_ship the next step
 				var t_coord: Vector2i = i_ship.descrete_path.padded_steps[i_tic]
@@ -136,16 +136,40 @@ func move_ships() -> void:
 		# We want both ships to move once per tic (if it has a move remaining)
 		# Then move on to next tic
 		# TODO: find and resolve collisions
-		var t_report: Dictionary[Vector2i, ArrayInt] = collision_report(i_tic)
+		var t_report: Dictionary[Vector2i, ArrayInt] = collision_report()
 		for i_key: Vector2i in t_report.keys():
 			var t_players: ArrayInt = t_report[i_key]
 			if t_players.i.size() > 1:
-				print("collision!")
+				print("collision!: " + str(t_players.i))
+				process_collisions(t_players)
 	all_moves_completed.emit()
 
 
+func process_collisions(a_players: ArrayInt) -> void:
+	var t_ships: Array[Ship] = []
+	var t_paths: Array[DescretePath] = []
+	var t_velocities: Array[Vector2i] = []
+	for i_player: int in a_players.i:
+		t_ships.append(ships[i_player])
+	for i_ship: Ship in t_ships:
+		t_paths.append(i_ship.descrete_path)
+		t_velocities.append(i_ship.velocity)
+	# Take first path and put it at end
+	# TODO: refactor to remove the double counting of velocity / path
+	var t_path: DescretePath = t_paths.pop_front()
+	var t_velocity: Vector2i = t_velocities.pop_front()
+	t_paths.append(t_path)
+	t_velocities.append(t_velocity)
+	for i_index: int in range(t_ships.size()):
+		t_ships[i_index].descrete_path = t_paths[i_index]
+		t_ships[i_index].velocity = t_velocities[i_index]
+	for i_ship: Ship in ships:
+		i_ship.point_at_velocity()
+
+
+
 # Key is coord of collision; item is list of players
-func collision_report(a_tic: int) -> Dictionary[Vector2i, ArrayInt]:
+func collision_report() -> Dictionary[Vector2i, ArrayInt]:
 	var t_report: Dictionary[Vector2i, ArrayInt] = {}
 	for i_ship: Ship in ships:
 			var t_coord: Vector2i = coords_from_position(i_ship.position)
@@ -165,8 +189,8 @@ func coords_from_position(a_pos: Vector2) -> Vector2i:
 
 # Given a tic, returns list of ships (by player) that are sharing a square
 # Assumes populate_padded_steps has been called on all ships
-func collision_list(a_tic: int) -> Array[ArrayInt]:
-	return []
+#func collision_list(a_tic: int) -> Array[ArrayInt]:
+	#return []
 
 
 
