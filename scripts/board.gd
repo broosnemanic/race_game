@@ -14,12 +14,14 @@ const LIGHT_TILE: Texture2D = preload("uid://crkmjka1gcgkc")
 const CROSSHAIR_TEX_00: Texture2D = preload("uid://b01dx1v65uhom")
 const TARGET_MARKER: Texture2D = preload("uid://cf85b3rajkbrk")
 const DOT: Texture2D = preload("uid://dup115kj27cgg")
+const POINT_TEXTURE: Texture2D = preload("uid://dup115kj27cgg")
+const ENDPOINT_TEXTURE: Texture2D = preload("uid://dipjdkw86aunk")
+
 
 var crosshair: Sprite2D
 var ships: Array[Ship]
 var selected_ship: Ship
 var mouse_pos: Vector2		# Relative to SubViewportContainer not viewport position
-var trace_register: Array[Line2D]
 var dot_register: Array[Sprite2D]
 var descrete_path_register: Array[DescretePath] = []
 
@@ -114,10 +116,7 @@ func on_move_selected(a_ship: Ship) -> void:
 
 
 func move_ships() -> void:
-	fade_traces()
-	fade_dots()
 	preserve_ship_paths()
-	var t_duration: float = 0.5
 	# Find tic count
 	var t_tic_count: int = 0
 	for i_ship: Ship in ships:
@@ -128,21 +127,46 @@ func move_ships() -> void:
 		t_path.populate_padded_steps(t_tic_count, t_path.coords[0], t_path.coords[-1])
 	for i_tic: int in range(0, t_tic_count - 1):
 		for i_ship: Ship in ships:
+				# TODO: Look ahead to see if a collision would happen
+				# then swap velocities to avoid collision
+				var t_list: Array[Ship] = collision_list(i_ship, i_tic)
+				if not t_list.is_empty():
+					swap_ship_velocities(i_ship, t_list[0])
+					i_ship.point_at_velocity()
+					t_list[0].point_at_velocity()
 				# Create tween to move i_ship the next step
 				var t_coord: Vector2i = i_ship.descrete_path.padded_steps[i_tic]
-				move_ship_to(i_ship, t_coord, t_duration)
-		# Create await timer with duration of move
-		await get_tree().create_timer(t_duration).timeout
-		# We want both ships to move once per tic (if it has a move remaining)
-		# Then move on to next tic
-		# TODO: find and resolve collisions
-		var t_report: Dictionary[Vector2i, ArrayInt] = collision_report()
-		for i_key: Vector2i in t_report.keys():
-			var t_players: ArrayInt = t_report[i_key]
-			if t_players.i.size() > 1:
-				print("collision!: " + str(t_players.i))
-				process_collisions(t_players)
+				move_ship_to(i_ship, t_coord, Constants.MOVE_TIME)
+				# Create await timer with duration of move
+				await get_tree().create_timer(Constants.MOVE_TIME).timeout
+
+
 	all_moves_completed.emit()
+
+
+func swap_ship_velocities(a_ship_1: Ship, a_ship_2: Ship) -> void:
+	var t_paths: Array[DescretePath] = []
+	t_paths.append(a_ship_1.descrete_path)
+	t_paths.append(a_ship_2.descrete_path)
+	a_ship_1.descrete_path = t_paths[1]
+	a_ship_2.descrete_path = t_paths[0]
+	var t_velocities: Array[Vector2i] = []
+	t_velocities.append(a_ship_1.velocity)
+	t_velocities.append(a_ship_2.velocity)
+	a_ship_1.velocity = t_velocities[1]
+	a_ship_2.velocity = t_velocities[0]
+
+
+
+func collision_list(a_ship: Ship, a_tic: int) -> Array[Ship]:
+	var t_list: Array[Ship] = []
+	var t_coord: Vector2i = coords_from_position(a_ship.position)	# Current position
+	t_coord += a_ship.descrete_path.padded_steps[a_tic]
+	for i_ship: Ship in ships:
+		if i_ship == a_ship: continue	# If current move is Zero we could match with a_ship
+		if coords_from_position(i_ship.position) == t_coord:
+			t_list.append(i_ship)
+	return t_list
 
 
 func process_collisions(a_players: ArrayInt) -> void:
@@ -183,14 +207,6 @@ func coords_from_position(a_pos: Vector2) -> Vector2i:
 	var t_x: int = floori(a_pos.x / Constants.ORIGINAL_SQUARE_SIZE as float)
 	var t_y: int = floori(a_pos.y / Constants.ORIGINAL_SQUARE_SIZE as float)
 	return Vector2i(t_x, t_y)
-
-
-
-
-# Given a tic, returns list of ships (by player) that are sharing a square
-# Assumes populate_padded_steps has been called on all ships
-#func collision_list(a_tic: int) -> Array[ArrayInt]:
-	#return []
 
 
 
@@ -237,77 +253,19 @@ func remove_old_paths() -> void:
 	descrete_path_register = t_register
 
 
-# This will have to be reworked as it does not take collisions in to account
-func move_ship(a_ship: Ship) -> void:
-	var t_coord: Vector2i = a_ship.coords()
-	a_ship.destroy_markers()
-	draw_dot(t_coord, a_ship.player)
-	var t_end: Vector2 = a_ship.position + Constants.ORIGINAL_SQUARE_SIZE * a_ship.velocity
-	var t_tween: Tween = get_tree().create_tween()
-	t_tween.tween_property(a_ship, "position", t_end, Constants.MOVE_TIME)
-	t_tween.finished.connect(ship_move_completed.emit.bind(a_ship))
-	draw_trace(t_coord, a_ship.coords() + a_ship.velocity, 0)
-
-
 
 func move_ship_to(a_ship: Ship, a_coord: Vector2i, a_duration: float) -> void:
 	var t_end: Vector2 = a_ship.position + Constants.ORIGINAL_SQUARE_SIZE * a_coord
 	var t_tween: Tween = get_tree().create_tween()
 	t_tween.tween_property(a_ship, "position", t_end, a_duration)
-
-
-
-func draw_trace(a_start: Vector2i, a_end: Vector2i, _a_player: int) -> void:
-	var t_line: Line2D = Line2D.new()
-	var t_start: Vector2 = a_start * Constants.ORIGINAL_SQUARE_SIZE
-	var t_end: Vector2 = a_end * Constants.ORIGINAL_SQUARE_SIZE
-	t_line.add_point(t_start)
-	t_line.add_point(t_start)
-	t_line.texture = DOT
-	t_line.texture_mode = Line2D.LINE_TEXTURE_TILE
-	t_line.texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
-	t_line.width = 25.0
-	t_line.modulate = Color.CHARTREUSE
-	grid_rect.add_child(t_line)
-	trace_register.append(t_line)
-	var t_tween: Tween = get_tree().create_tween()
-	t_tween.tween_method(extend_line.bind(t_line), t_start, t_end, Constants.MOVE_TIME)
-
-
-func extend_line(a_end: Vector2, a_line: Line2D) -> void:
-	a_line.points[1] = a_end
-
-
-func fade_traces() -> void:
-	for i_trace: Line2D in trace_register:
-		i_trace.modulate.a -= Constants.FADE_INCR
-	remove_old_traces()
-
-
-func remove_old_traces() -> void:
-	for i_index: int in range(trace_register.size()):
-		var t_trace: Line2D = trace_register[i_index]
-		if t_trace.modulate.a <= 0.0:
-			trace_register[i_index] = null
-			t_trace.queue_free()
-	var t_register: Array[Line2D] = []
-	for i_trace: Line2D in trace_register:
-		if i_trace != null:
-			t_register.append(i_trace)
-	trace_register = t_register
-
-
-func fade_dots() -> void:
-	for i_dot: Sprite2D in dot_register:
-		#i_dot.modulate.a *= Constants.FADE_FACTOR
-		i_dot.modulate.a -= Constants.FADE_INCR
+	draw_dot(coords_from_position(t_end), a_ship.player)
 
 
 func draw_dot(a_coord: Vector2i, a_player: int) -> void:
 	var t_dot: Sprite2D = Sprite2D.new()
 	t_dot.texture = DOT
 	grid_rect.add_child(t_dot)
-	t_dot.scale = Vector2(1.5, 1.5)
+	t_dot.scale = Vector2(10.5, 10.5)
 	t_dot.modulate = Constants.player_color[a_player]
 	t_dot.position = Constants.ORIGINAL_SQUARE_SIZE * a_coord
 	dot_register.append(t_dot)

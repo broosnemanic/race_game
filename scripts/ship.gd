@@ -136,10 +136,19 @@ func point_at_marker(a_marker: Marker) -> void:
 
 func point_at_velocity() -> void:
 	var t_pos: Vector2 = velocity * Constants.ORIGINAL_SQUARE_SIZE
-	marker_pointer.points[1] = t_pos
-	marker_arrow.position = t_pos
-	marker_arrow.point_along_coords(Vector2.ZERO, t_pos)
-	
+	var t_tween: Tween = get_tree().create_tween()
+	t_tween.tween_method(point_at_position, marker_pointer.points[1], t_pos, Constants.MOVE_TIME)
+	point_at_position(t_pos)
+	#marker_pointer.points[1] = t_pos
+	#marker_arrow.position = t_pos
+	#marker_arrow.point_along_coords(Vector2.ZERO, t_pos)
+
+
+
+func point_at_position(a_pos: Vector2) -> void:
+	marker_pointer.points[1] = a_pos
+	marker_arrow.position = a_pos
+	marker_arrow.point_along_coords(Vector2.ZERO, a_pos)
 
 
 

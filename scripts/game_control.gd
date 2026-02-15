@@ -47,7 +47,7 @@ func start_turn() -> void:
 
 # Placeholder func to distribute starting positions
 func start_pos_from_player(a_player: int) -> Vector2:
-	var t_coord: Vector2i = Vector2i(a_player, 0)
+	var t_coord: Vector2i = Vector2i(3 * a_player, 10)
 	return board.pos_from_coords(t_coord) + board.board_camera.offset
 
 
