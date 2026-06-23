@@ -1,4 +1,4 @@
-[gd_scene load_steps=4 format=3 uid="uid://5j6keqmi6dvl"]
+[gd_scene format=3 uid="uid://5j6keqmi6dvl"]
 
 [ext_resource type="Script" uid="uid://7vm85tj3unsh" path="res://scripts/game_control.gd" id="1_tu4ud"]
 
@@ -8,48 +8,48 @@ bg_color = Color(0.8914368, 0.47443634, 3.85046e-07, 1)
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_p7u1o"]
 bg_color = Color(1.92523e-07, 0.6594781, 0.84755117, 1)
 
-[node name="GameControl" type="Node2D"]
+[node name="GameControl" type="Node2D" unique_id=1712009764]
 script = ExtResource("1_tu4ud")
 
-[node name="CanvasLayer" type="CanvasLayer" parent="."]
+[node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=1636536639]
 
-[node name="TopBox" type="VBoxContainer" parent="CanvasLayer"]
+[node name="TopBox" type="VBoxContainer" parent="CanvasLayer" unique_id=469473653]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="MenuBox" type="HBoxContainer" parent="CanvasLayer/TopBox"]
+[node name="MenuBox" type="HBoxContainer" parent="CanvasLayer/TopBox" unique_id=2051162104]
 layout_mode = 2
 size_flags_vertical = 3
 size_flags_stretch_ratio = 0.5
 
-[node name="Panel" type="Panel" parent="CanvasLayer/TopBox/MenuBox"]
+[node name="Panel" type="Panel" parent="CanvasLayer/TopBox/MenuBox" unique_id=496435174]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_styles/panel = SubResource("StyleBoxFlat_tu4ud")
 
-[node name="CentralBox" type="HBoxContainer" parent="CanvasLayer/TopBox"]
+[node name="CentralBox" type="HBoxContainer" parent="CanvasLayer/TopBox" unique_id=18388518]
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="PanelContainer" type="PanelContainer" parent="CanvasLayer/TopBox/CentralBox"]
+[node name="PanelContainer" type="PanelContainer" parent="CanvasLayer/TopBox/CentralBox" unique_id=201957960]
 layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 1
 
-[node name="BoardContainer" type="MarginContainer" parent="CanvasLayer/TopBox/CentralBox/PanelContainer"]
+[node name="BoardContainer" type="MarginContainer" parent="CanvasLayer/TopBox/CentralBox/PanelContainer" unique_id=842042031]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="FooterBox" type="HBoxContainer" parent="CanvasLayer/TopBox"]
+[node name="FooterBox" type="HBoxContainer" parent="CanvasLayer/TopBox" unique_id=1863985167]
 layout_mode = 2
 size_flags_vertical = 3
 size_flags_stretch_ratio = 0.5
 
-[node name="Panel" type="Panel" parent="CanvasLayer/TopBox/FooterBox"]
+[node name="Panel" type="Panel" parent="CanvasLayer/TopBox/FooterBox" unique_id=1802377427]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_styles/panel = SubResource("StyleBoxFlat_p7u1o")

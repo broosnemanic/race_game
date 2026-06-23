@@ -18,7 +18,7 @@ const POINT_TEXTURE: Texture2D = preload("uid://dup115kj27cgg")
 const ENDPOINT_TEXTURE: Texture2D = preload("uid://dipjdkw86aunk")
 
 
-var crosshair: Sprite2D
+#var crosshair: Sprite2D
 var ships: Array[Ship]
 var selected_ship: Ship
 var mouse_pos: Vector2		# Relative to SubViewportContainer not viewport position
@@ -26,11 +26,12 @@ var dot_register: Array[Sprite2D]
 var descrete_path_register: Array[DescretePath] = []
 
 func _ready() -> void:
-	crosshair = Sprite2D.new()
-	crosshair.texture = CROSSHAIR_TEX_00
-	crosshair.modulate = Color("000000ff")
-	grid_rect.add_child(crosshair)
-	crosshair.visible = true
+	pass
+	#crosshair = Sprite2D.new()
+	#crosshair.texture = CROSSHAIR_TEX_00
+	#crosshair.modulate = Color("000000ff")
+	#grid_rect.add_child(crosshair)
+	#crosshair.visible = true
 
 
 func _process(_delta: float) -> void:
@@ -265,7 +266,7 @@ func draw_dot(a_coord: Vector2i, a_player: int) -> void:
 	var t_dot: Sprite2D = Sprite2D.new()
 	t_dot.texture = DOT
 	grid_rect.add_child(t_dot)
-	t_dot.scale = Vector2(10.5, 10.5)
+	t_dot.scale = Vector2(1.5, 1.5)
 	t_dot.modulate = Constants.player_color[a_player]
 	t_dot.position = Constants.ORIGINAL_SQUARE_SIZE * a_coord
 	dot_register.append(t_dot)
