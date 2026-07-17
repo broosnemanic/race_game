@@ -134,6 +134,15 @@ func point_at_marker(a_marker: Marker) -> void:
 	path = descrete_path.coords
 
 
+# 
+func set_velocity(a_velocity: Vector2i) -> void:
+	velocity = a_velocity
+	var t_descrete: DescretePath = DescretePath.new()
+	path = t_descrete.line_coords(Vector2i.ZERO, velocity)
+	t_descrete.color = Constants.player_color[player]
+
+
+
 func point_at_velocity() -> void:
 	var t_pos: Vector2 = velocity * Constants.ORIGINAL_SQUARE_SIZE
 	var t_tween: Tween = get_tree().create_tween()

@@ -1,56 +1,43 @@
 extends SubViewportContainer
 class_name Board
 
-signal ship_move_completed(a_ship: Ship)
 signal ship_move_selected(a_ship: Ship)
 signal all_moves_completed()
 
-@onready var board_camera: Camera2D = %BoardCamera
-@onready var grid_rect: TextureRect = %GridRect
-@onready var board_viewport: SubViewport = $BoardViewport
-
-const TILE_0680: Texture2D = preload("uid://c413je2hltv8q")
-const LIGHT_TILE: Texture2D = preload("uid://crkmjka1gcgkc")
-const CROSSHAIR_TEX_00: Texture2D = preload("uid://b01dx1v65uhom")
-const TARGET_MARKER: Texture2D = preload("uid://cf85b3rajkbrk")
-const DOT: Texture2D = preload("uid://dup115kj27cgg")
-const POINT_TEXTURE: Texture2D = preload("uid://dup115kj27cgg")
-const ENDPOINT_TEXTURE: Texture2D = preload("uid://dipjdkw86aunk")
+@onready var board_camera: Camera2D = %BoardCamera			# Shows an area of the board
+@onready var grid_rect: TextureRect = %GridRect				# Board texture; parent to all added ships
+@onready var board_viewport: SubViewport = $BoardViewport	# As it says
 
 
-#var crosshair: Sprite2D
 var ships: Array[Ship]
 var selected_ship: Ship
-var mouse_pos: Vector2		# Relative to SubViewportContainer not viewport position
-var dot_register: Array[Sprite2D]
 var descrete_path_register: Array[DescretePath] = []
+var squares: Dictionary[Vector2i, Square] = {}			# Content at coords including wall location
 
+
+# Unused
 func _ready() -> void:
 	pass
-	#crosshair = Sprite2D.new()
-	#crosshair.texture = CROSSHAIR_TEX_00
-	#crosshair.modulate = Color("000000ff")
-	#grid_rect.add_child(crosshair)
-	#crosshair.visible = true
 
 
+# Unused
 func _process(_delta: float) -> void:
-	var t_pos: Vector2 = grid_rect.get_local_mouse_position()
-	if t_pos != mouse_pos:
-		mouse_pos = t_pos
+	pass
 
 
-func get_mouse_pos() -> Vector2:
-	return grid_rect.get_local_mouse_position()
+# As it says
+#func get_mouse_pos() -> Vector2:
+	#return grid_rect.get_local_mouse_position()
 
 
-func ship_at_mouse_pos() -> Ship:
-	var t_mouse_coords: Vector2i = coords_from_pos(get_mouse_pos())
-	for i_ship: Ship in ships:
-		var t_ship_coord: Vector2i = coords_from_pos(i_ship.position)
-		if t_mouse_coords == t_ship_coord:
-			return i_ship
-	return null
+
+#func ship_at_mouse_pos() -> Ship:
+	#var t_mouse_coords: Vector2i = coords_from_pos(get_mouse_pos())
+	#for i_ship: Ship in ships:
+		#var t_ship_coord: Vector2i = coords_from_pos(i_ship.position)
+		#if t_mouse_coords == t_ship_coord:
+			#return i_ship
+	#return null
 
 
 # Size of one square in pixels
@@ -69,6 +56,7 @@ var grid_size: Vector2i:
 		grid_rect.size = Vector2(t_x, t_y)
 
 
+# As it says
 func center_camera() -> void:
 	board_camera.offset = Vector2(0.5 * grid_rect.size.x, 0.5 * grid_rect.size.y)
 
@@ -78,6 +66,7 @@ func snapped_pos(a_pos: Vector2) -> Vector2:
 	return pos_from_coords(coords_from_pos(a_pos))
 
 
+# As it says
 func pos_from_coords(a_coords: Vector2i) -> Vector2:
 	var t_x: float = a_coords.x as float * square_size
 	var t_y: float = a_coords.y as float * square_size
@@ -91,6 +80,7 @@ func coords_from_pos(a_pos: Vector2) -> Vector2i:
 	return Vector2i(floori(t_x / square_size), floori(t_y / square_size))
 
 
+# Adds `a_ship` as a child of `grid_rect and connects `on_move_selected`
 func add_ship(a_ship: Ship) -> void:
 	ships.append(a_ship)
 	grid_rect.add_child(a_ship)
@@ -98,25 +88,30 @@ func add_ship(a_ship: Ship) -> void:
 	a_ship.move_selected.connect(on_move_selected)
 
 
+# As it says
 func select_ship(a_ship: Ship) -> void:
 	on_ship_selected(a_ship)
 
 
+# As it says
 func select_first_ship() -> void:
 	select_ship(ships[0])
 
 
+# As it says
 func select_next_ship() -> void:
 	var t_index: int = 0 if selected_ship == null else selected_ship.player + 1
 	if t_index < ships.size():
 		select_ship(ships[t_index])
 
 
+# Signal subscribed to by `GameControl`
 func on_move_selected(a_ship: Ship) -> void:
 	ship_move_selected.emit(a_ship)
 
 
-func move_ships() -> void:
+# TODO: retool collisions to allow overlaps; imp non-overlap tidying
+func move_ships_old() -> void:
 	preserve_ship_paths()
 	# Find tic count
 	var t_tic_count: int = 0
@@ -140,11 +135,162 @@ func move_ships() -> void:
 				move_ship_to(i_ship, t_coord, Constants.MOVE_TIME)
 				# Create await timer with duration of move
 				await get_tree().create_timer(Constants.MOVE_TIME).timeout
-
-
 	all_moves_completed.emit()
 
 
+func move_ships_OLD() -> void:
+	preserve_ship_paths()
+	# Find tic count
+	var t_tic_count: int = 0
+	for i_ship: Ship in ships:
+		t_tic_count = maxi(t_tic_count, i_ship.descrete_path.count())
+	# Loop through tics
+	for i_ship: Ship in ships:
+		var t_path: DescretePath = i_ship.descrete_path
+		t_path.populate_padded_steps(t_tic_count, t_path.coords[0], t_path.coords[-1])
+	for i_tic: int in range(0, t_tic_count - 1):
+		for i_ship: Ship in ships:
+				# TODO: Look ahead to see if a collision would happen
+				# then swap velocities to avoid collision
+				var t_list: Array[Ship] = collision_list(i_ship, i_tic)
+				if not t_list.is_empty():
+					swap_ship_velocities(i_ship, t_list[0])
+					i_ship.point_at_velocity()
+					t_list[0].point_at_velocity()
+				# Create tween to move i_ship the next step
+				var t_coord: Vector2i = i_ship.descrete_path.padded_steps[i_tic]
+				move_ship_to(i_ship, t_coord, Constants.MOVE_TIME)
+				# Create await timer with duration of move
+				await get_tree().create_timer(Constants.MOVE_TIME).timeout
+	all_moves_completed.emit()
+
+
+func move_ships() -> void:
+	preserve_ship_paths()
+	# Tic count = max move count of all ships this turn
+	var t_tic_count: int = 0
+	for i_ship: Ship in ships:
+		t_tic_count = maxi(t_tic_count, i_ship.descrete_path.count())
+	# Loop through tics
+	for i_ship: Ship in ships:
+		var t_path: DescretePath = i_ship.descrete_path
+		t_path.populate_padded_steps(t_tic_count, t_path.coords[0], t_path.coords[-1])
+	for i_tic: int in range(0, t_tic_count - 1):
+		for i_ship: Ship in ships:
+			# Move ship
+			var t_coord: Vector2i = i_ship.descrete_path.padded_steps[i_tic]
+			move_ship_to(i_ship, t_coord, Constants.MOVE_TIME)
+			# Create await timer with duration of move
+			await get_tree().create_timer(Constants.MOVE_TIME).timeout
+		var t_coords: Array[Vector2i] = occupied_coords()
+		for i_coord: Vector2i in t_coords:
+			handle_collisions_at(i_coord)
+		for i_coord: Vector2i in t_coords:
+			handle_wall_collisions_at(i_coord)
+		#for i_ship: Ship in ships:
+			#var t_list: Array[Ship] = collision_list(i_ship, i_tic)
+			#if not t_list.is_empty():
+				#swap_ship_velocities(i_ship, t_list[0])
+				#i_ship.point_at_velocity()
+				#t_list[0].point_at_velocity()
+	all_moves_completed.emit()
+
+
+# At this momenet which squares are coccupied by a ship?
+func occupied_coords() -> Array[Vector2i]:
+	var t_dict: Dictionary[Vector2i, Vector2i] = {}
+	for i_ship: Ship in ships:
+		var t_coords: Vector2i = coords_from_position(i_ship.position)
+		t_dict[t_coords] = t_coords
+	return t_dict.keys()
+
+
+#
+func ships_at(a_coords: Vector2i) -> Array[Ship]:
+	var t_ships: Array[Ship] = []
+	for i_ship: Ship in ships:
+		var t_coords: Vector2i = coords_from_position(i_ship.position)
+		if t_coords == a_coords:
+			t_ships.append(i_ship)
+	return t_ships
+
+
+# If there ia a collision at `a_coord` shuffle ship velocities
+func handle_collisions_at(a_coords: Vector2i) -> void:
+	var t_ships: Array[Ship] = ships_at(a_coords)
+	var t_size: int = t_ships.size()
+	if t_size <= 1: return
+	var t_new_velocities: Array[Vector2i] = []
+	var x_offset: int = _random_index_offset(t_size)
+	var y_offset: int = _random_index_offset(t_size)
+	for i_index: int in range(t_size):
+		var t_x: int = (i_index + x_offset) % t_size
+		var t_y: int = (i_index + y_offset) % t_size
+		var t_velocity: Vector2i = Vector2i(ships[t_x].velocity.x, ships[t_y].velocity.y)
+		t_new_velocities.append(t_velocity)
+	for i_index: int in range(t_size):
+		var t_ship: Ship = ships[i_index]
+		var t_tic_count: int = t_ship.descrete_path.padded_steps.size()
+		t_ship.set_velocity(t_new_velocities[i_index])
+		var t_path: DescretePath = t_ship.descrete_path
+		t_path.populate_padded_steps(t_tic_count, Vector2i.ZERO, t_ship.velocity)
+		t_ship.point_at_velocity()
+
+
+#
+func handle_wall_collisions_at(a_coords: Vector2i) -> void:
+	if not squares.has(a_coords): return
+	var t_square: Square = squares[a_coords]
+	if t_square == null: return
+	var t_normal: Vector2i = t_square.normal
+	if t_normal == null: return
+	var t_ships: Array[Ship] = ships_at(a_coords)
+	var t_size: int = t_ships.size()
+	for i_index: int in range(t_size):
+		var t_ship: Ship = ships[i_index]
+		if is_wall_collision(t_square, t_ship.velocity):
+			var t_new_velocity: Vector2i = -2 * abs(t_normal) * t_ship.velocity + t_ship.velocity
+			t_ship.set_velocity(t_new_velocity)
+			var t_tic_count: int = t_ship.descrete_path.padded_steps.size()
+			var t_path: DescretePath = t_ship.descrete_path
+			t_path.populate_padded_steps(t_tic_count, Vector2i.ZERO, t_ship.velocity)
+			t_ship.point_at_velocity()
+
+
+
+
+
+# Should a ship at `a_square` bounce?
+func is_wall_collision(a_square: Square, a_velocity: Vector2i) -> bool:
+	if a_velocity == Vector2i.ZERO: return false
+	var t_normal: Vector2i = a_square.normal
+	if a_square.is_corner():
+		var t_x_same: bool = is_same_sign(t_normal.x, a_velocity.x)
+		var t_y_same: bool = is_same_sign(t_normal.y, a_velocity.y)
+		if a_square.is_convex:
+			return not t_x_same and not t_y_same
+		else:
+			return not t_x_same or not t_y_same
+	else:
+		if t_normal.x == 0:
+			return is_same_sign(-t_normal.y, a_velocity.y)
+		else:
+			return is_same_sign(-t_normal.x, a_velocity.x)
+
+
+# Note: Zero matches nothing
+func is_same_sign(a_int_0: int, a_int_1: int) -> bool:
+	if a_int_0 == 0 or a_int_1 == 0: return false
+	return sign(a_int_0) == sign(a_int_1)
+	
+	
+
+# Returns random offset guaranteed to not wrap back to zero
+func _random_index_offset(a_array_size: int) -> int:
+	return 1 + randi() % (a_array_size - 1)
+
+
+# TODO: this is simplest version; rewrite to allow many-ship collisions
 func swap_ship_velocities(a_ship_1: Ship, a_ship_2: Ship) -> void:
 	var t_paths: Array[DescretePath] = []
 	t_paths.append(a_ship_1.descrete_path)
@@ -158,7 +304,7 @@ func swap_ship_velocities(a_ship_1: Ship, a_ship_2: Ship) -> void:
 	a_ship_2.velocity = t_velocities[0]
 
 
-
+# List of ships at same coords as `a_ship` at time `a_tic`
 func collision_list(a_ship: Ship, a_tic: int) -> Array[Ship]:
 	var t_list: Array[Ship] = []
 	var t_coord: Vector2i = coords_from_position(a_ship.position)	# Current position
@@ -170,7 +316,8 @@ func collision_list(a_ship: Ship, a_tic: int) -> Array[Ship]:
 	return t_list
 
 
-func process_collisions(a_players: ArrayInt) -> void:
+# Does not seem to be used
+func _process_collisions(a_players: ArrayInt) -> void:
 	var t_ships: Array[Ship] = []
 	var t_paths: Array[DescretePath] = []
 	var t_velocities: Array[Vector2i] = []
@@ -192,7 +339,6 @@ func process_collisions(a_players: ArrayInt) -> void:
 		i_ship.point_at_velocity()
 
 
-
 # Key is coord of collision; item is list of players
 func collision_report() -> Dictionary[Vector2i, ArrayInt]:
 	var t_report: Dictionary[Vector2i, ArrayInt] = {}
@@ -204,6 +350,7 @@ func collision_report() -> Dictionary[Vector2i, ArrayInt]:
 	return t_report
 
 
+# Grid coords from position on board
 func coords_from_position(a_pos: Vector2) -> Vector2i:
 	var t_x: int = floori(a_pos.x / Constants.ORIGINAL_SQUARE_SIZE as float)
 	var t_y: int = floori(a_pos.y / Constants.ORIGINAL_SQUARE_SIZE as float)
@@ -222,6 +369,8 @@ func distributed_bools(a_total: int, a_count: int) -> Array[bool]:
 	return t_array
 
 
+# Draw and store path each ship is about to make
+# Note this means the incorrect path gets drawn when there is a collision
 func preserve_ship_paths() -> void:
 	for i_ship: Ship in ships:
 		var t_path: DescretePath = DescretePath.new()
@@ -235,12 +384,14 @@ func preserve_ship_paths() -> void:
 	fade_descrete_paths()
 
 
+# As it says
 func fade_descrete_paths() -> void:
 	for i_path: DescretePath in descrete_path_register:
 		i_path.fade(Constants.FADE_INCR)
 	remove_old_paths()
 
 
+# Remove paths that are no longer visible
 func remove_old_paths() -> void:
 	for i_index: int in range(descrete_path_register.size()):
 		var t_path: DescretePath = descrete_path_register[i_index]
@@ -254,24 +405,48 @@ func remove_old_paths() -> void:
 	descrete_path_register = t_register
 
 
-
+# Note this is used to move `a_ship` one square on a valid tic
 func move_ship_to(a_ship: Ship, a_coord: Vector2i, a_duration: float) -> void:
 	var t_end: Vector2 = a_ship.position + Constants.ORIGINAL_SQUARE_SIZE * a_coord
 	var t_tween: Tween = get_tree().create_tween()
 	t_tween.tween_property(a_ship, "position", t_end, a_duration)
-	draw_dot(coords_from_position(t_end), a_ship.player)
 
 
-func draw_dot(a_coord: Vector2i, a_player: int) -> void:
-	var t_dot: Sprite2D = Sprite2D.new()
-	t_dot.texture = DOT
-	grid_rect.add_child(t_dot)
-	t_dot.scale = Vector2(1.5, 1.5)
-	t_dot.modulate = Constants.player_color[a_player]
-	t_dot.position = Constants.ORIGINAL_SQUARE_SIZE * a_coord
-	dot_register.append(t_dot)
-
-
+# Actions to perform when `a_ship` is selected
 func on_ship_selected(a_ship: Ship) -> void:
 	selected_ship = a_ship
 	a_ship.create_markers()
+
+
+#
+func draw_track() -> void:
+	for i_coord: Vector2i in squares.keys():
+		draw_square_at(i_coord, squares[i_coord])
+
+
+#
+func draw_square_at(a_coord: Vector2i, a_square: Square) -> void:
+	var t_center: Vector2 = pos_from_coords(a_coord)
+	var t_offest: float = 0.5 * square_size
+	var t_normal: Vector2i = a_square.normal
+	var t_perp: Vector2i = Vector2i(t_normal.y, t_normal.x)
+	if not is_corner_normal(t_normal):
+		var t_point_0: Vector2 = t_center
+		var t_point_1: Vector2 = t_center
+		t_point_0 += -1.0 * t_offest * t_normal
+		t_point_1 += -1.0 * t_offest * t_normal
+		t_point_0 += 1.0 * t_offest * t_perp
+		t_point_1 += -1.0 * t_offest * t_perp
+		var t_line: Line2D = Line2D.new()
+		t_line.default_color = Color.TEAL
+		grid_rect.add_child(t_line)
+		t_line.add_point(t_point_0)
+		t_line.add_point(t_point_1)
+
+
+
+# Does `a_normal` represent a wall corner?
+func is_corner_normal(a_normal: Vector2i) -> bool:
+	return a_normal.x != 0 and a_normal.y != 0
+	
+	

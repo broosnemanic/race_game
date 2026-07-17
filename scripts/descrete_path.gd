@@ -1,7 +1,9 @@
 extends Node2D
 class_name DescretePath
 
-var coords: Array[Vector2i] = []				# Int coord of points
+var coords: Array[Vector2i] = []:				# Int coord of points
+	set(a_coords):
+		coords = a_coords
 var point_markers: Array[Sprite2D] = []			# Graphical representation of points
 var color: Color = Color.FUCHSIA				# Default point_marker color
 var tic: int = 0								# Current place in coords list
@@ -96,6 +98,7 @@ func distributed_directions(a_start: Vector2i, a_end: Vector2i) -> Array[Vector2
 	return t_directions
 
 
+#
 func populate_padded_steps(a_path_length: int, a_start: Vector2i, a_end: Vector2i) -> void:
 	var t_steps: Array[Vector2i] = distributed_directions(a_start, a_end)
 	var t_padded: Array[Vector2i] = []
