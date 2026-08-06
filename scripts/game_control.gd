@@ -21,9 +21,17 @@ func _ready() -> void:
 	board.center_camera()
 	board.board_camera.zoom = Vector2(0.5, 0.5)
 	board.ship_move_selected.connect(on_ship_move_selected)
-	setup_track()
+	#setup_track()
 	new_game(1, 0)
+	#activate_board_edit_mode()
 	await get_tree().process_frame
+
+
+# 
+func activate_board_edit_mode() -> void:
+	new_game(0, 0)
+	board.is_edit_mode = true
+
 
 
 #
@@ -65,15 +73,17 @@ func new_game(a_player_count: int, a_bot_count: int) -> void:
 		board.add_ship(t_ship)
 		t_ship.z_index = Constants.SHIP_Z_INDEX
 		t_ship.position = start_pos_from_player(t_ship.player)
-		if i_index == 0:
-			t_ship.set_velocity(Vector2i(6, -10))
-		if i_index == 1:
-			t_ship.set_velocity(Vector2i(-4, -7))
-		if i_index == 2:
-			t_ship.set_velocity(Vector2i(0, -7))
-	board.on_ship_selected(ships[0])
+		#if i_index == 0:
+			#t_ship.set_velocity(Vector2i(0, -5))
+		#if i_index == 1:
+			#t_ship.set_velocity(Vector2i(-4, -7))
+		#if i_index == 2:
+			#t_ship.set_velocity(Vector2i(0, -7))
+	if not ships.is_empty():
+		board.on_ship_selected(ships[0])
 	ship_ready_report.resize(ships.size())
 	turn_index = 0
+	board.load_track()
 
 
 #
@@ -83,9 +93,11 @@ func start_turn() -> void:
 
 # Placeholder func to distribute starting positions
 func start_pos_from_player(a_player: int) -> Vector2:
-	var t_coord: Vector2i = Vector2i(4 * a_player + 30, 35)
-	if a_player == 2:
-		t_coord = Vector2i(2, 10)
+	var t_coord: Vector2i = Vector2i(1 * a_player + 26, 40)
+	if a_player == 0:
+		t_coord = Vector2i(32, 39)
+		ships[0].set_velocity(Vector2i(1, 0))
+
 	return board.pos_from_coords(t_coord)# + board.board_camera.offset
 
 

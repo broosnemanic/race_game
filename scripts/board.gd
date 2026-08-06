@@ -7,12 +7,18 @@ signal all_moves_completed()
 @onready var board_camera: Camera2D = %BoardCamera			# Shows an area of the board
 @onready var grid_rect: TextureRect = %GridRect				# Board texture; parent to all added ships
 @onready var board_viewport: SubViewport = $BoardViewport	# As it says
+const ARROW_N: Texture2D = preload("uid://okolfthjmlqn")
 
 
 var ships: Array[Ship]
 var selected_ship: Ship
 var descrete_path_register: Array[DescretePath] = []
 var squares: Dictionary[Vector2i, Square] = {}			# Content at coords including wall location
+var square_sprites: Dictionary[Vector2i, Sprite2D] = {}	# Sprite at coord
+var trail_markers: Dictionary[int, Array] = {}			# Key: player; value: array of trail markers
+var _last_mouse_coord: Vector2i = Vector2i.ZERO
+var is_edit_mode: bool
+var track_data: Dictionary[Vector2i, Constants.SQUARE_TYPE] = {}
 
 
 # Unused
@@ -22,12 +28,207 @@ func _ready() -> void:
 
 # Unused
 func _process(_delta: float) -> void:
-	pass
+	var t_mouse_coord: Vector2i = get_mouse_coord()
+	if t_mouse_coord != _last_mouse_coord:
+		#if squares.has(t_mouse_coord):
+			#print(squares[t_mouse_coord].normal)
+		_last_mouse_coord = t_mouse_coord
+
+
+func _input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and is_edit_mode:
+		var t_event: InputEventMouseButton = event
+		if t_event.button_index == MOUSE_BUTTON_LEFT:
+			add_block_at_mouse_pos(true)
+		elif t_event.button_index == MOUSE_BUTTON_RIGHT:
+			add_block_at_mouse_pos(false)
+	if event is InputEventKey:
+		var t_event: InputEventKey = event
+		if t_event.pressed:
+			if t_event.keycode == KEY_S:
+				save_track()
+			if t_event.keycode == KEY_L:
+				load_track()
+
+#
+func add_block_at_mouse_pos(a_is_add: bool) -> void:
+	add_block_at(get_mouse_coord(), a_is_add)
+
+
+#
+func add_block_at(a_coord: Vector2i, a_is_add: bool) -> void:
+	var t_block_sprite: Sprite2D
+	if not a_is_add:
+		if square_sprites.has(a_coord):
+			t_block_sprite = square_sprites[a_coord]
+			if not t_block_sprite == null:
+				t_block_sprite.visible = false
+				grid_rect.remove_child(t_block_sprite)
+				t_block_sprite.queue_free()
+				square_sprites[a_coord] = null
+				track_data.erase(a_coord)
+	elif not (square_sprites.has(a_coord) and square_sprites[a_coord] != null):
+		t_block_sprite = new_block_sprite()
+		square_sprites[a_coord] = t_block_sprite
+		track_data[a_coord] = Constants.SQUARE_TYPE.BLOCK
+		grid_rect.add_child(t_block_sprite)
+		t_block_sprite.position = pos_from_coords(a_coord)
+
+
+#
+func new_block_sprite() -> Sprite2D:
+	var t_sprite: Sprite2D = Sprite2D.new()
+	t_sprite.texture = Constants.LIGHT_TILE
+	t_sprite.scale = Vector2(0.5, 0.5)
+	return t_sprite
+
+
+#
+func save_track() -> void:
+	var t_file: FileAccess = FileAccess.open("user://save_game.dat", FileAccess.WRITE)
+	var t_string: String = var_to_str(track_data)
+	t_file.store_string(t_string)
+	t_file.flush()
+	t_file.close()
+
+
+#
+func load_track() -> void:
+	var t_file: FileAccess = FileAccess.open("user://save_game.dat", FileAccess.READ)
+	track_data = str_to_var(t_file.get_as_text())
+	process_track_data()
+	display_track()
+
+
+# Populate `squares` from `track_data`
+func process_track_data() -> void:
+	for i_coord: Vector2i in track_data:
+		if track_data[i_coord] != Constants.SQUARE_TYPE.BLOCK: continue
+		var t_set: Dictionary[Vector2i, Vector2i] = normal_set_from_coord(i_coord)
+		# Merge t_set` into `squares`
+		for j_coord: Vector2i in t_set:
+			var t_normal: Vector2i = t_set[j_coord]
+			if not squares.has(j_coord):
+				squares[j_coord] = Square.new(t_set[j_coord], false)
+			else:
+				if is_semicardinal_dir(t_normal): continue
+				t_normal = normal_sum(squares[j_coord].normal, t_set[j_coord])
+				squares[j_coord] = Square.new(t_normal, false)
+	# Add a block in `squares` at `i_coord`
+	for i_coord: Vector2i in track_data:
+		squares[i_coord] = Square.new()
+	# Convex vs concave corners need to be marked
+	process_corners()
+	# Add normal arrows
+	for i_coord: Vector2i in squares.keys():
+		var t_square: Square = squares[i_coord]
+		if t_square.is_block: continue
+		var t_sprite: Sprite2D = arrow_from_normal(t_square.normal)
+		grid_rect.add_child(t_sprite)
+		t_sprite.position = pos_from_coords(i_coord)
+
+	
+
+
+# Returns set of normals surrounding a block at `a_coord`
+func normal_set_from_coord(a_coord: Vector2i) -> Dictionary[Vector2i, Vector2i]:
+	var t_set: Dictionary[Vector2i, Vector2i] = {}
+	for i_dir: Vector2i in Constants.directions:
+		var t_coord: Vector2i = a_coord + i_dir
+		t_set[t_coord] = i_dir
+	return t_set
+
+
+# Sums two normals while keeping magnitude of x and y <= 1
+func normal_sum(a_normal_0: Vector2i, a_normal_1: Vector2i) -> Vector2i:
+	if is_cardinal_dir(a_normal_0) and is_semicardinal_dir(a_normal_1):
+		return a_normal_0
+	if is_cardinal_dir(a_normal_1) and is_semicardinal_dir(a_normal_0):
+		return a_normal_1
+	var t_x: int = a_normal_0.x + a_normal_1.x
+	var t_y: int = a_normal_0.y + a_normal_1.y
+	t_x = maxi(t_x, -1)		# Min value of t_x == -1
+	t_x = mini(t_x, 1)		# Max value of t_x == 1
+	t_y = maxi(t_y, -1)		# Min value of t_y == -1
+	t_y = mini(t_y, 1)		# Max value of t_y == 1
+	return Vector2i(t_x, t_y)
+
+
+# Find and mark outer vs inner corners
+func process_corners() -> void:
+	for i_coord: Vector2i in squares.keys():
+		var t_square: Square = squares[i_coord]
+		if t_square.is_corner():
+			t_square.is_convex = is_convex_corner(i_coord)
+
+
+# 
+func is_convex_corner(a_coord: Vector2i) -> bool:
+	if not squares.has(a_coord): return false
+	var t_square: Square = squares[a_coord]
+	if not t_square.is_corner(): return false
+	for i_dir: Vector2i in [Vector2i.UP, Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT]:
+		if not squares.has(a_coord + i_dir): continue
+		if squares[a_coord + i_dir].is_block: return false
+	return true
+
+
+func arrow_from_normal(a_normal: Vector2i) -> Sprite2D:
+	var t_sprite: Sprite2D = Sprite2D.new()
+	t_sprite.texture = ARROW_N
+	t_sprite.modulate = Color.CORNFLOWER_BLUE
+	t_sprite.modulate.a = 0.5
+	var t_angle: float
+	var t_pi_4: float = PI / 4.0
+	match a_normal:
+		Vector2i.UP:
+			t_angle = 0.0
+		Vector2i(1, -1):
+			t_angle = 1.0 * t_pi_4
+		Vector2i.RIGHT:
+			t_angle = 2.0 * t_pi_4
+		Vector2i(1, 1):
+			t_angle = 3 * t_pi_4
+		Vector2i.DOWN:
+			t_angle = 4.0 * t_pi_4
+		Vector2i(-1, 1):
+			t_angle = 5.0 * t_pi_4
+		Vector2i.LEFT:
+			t_angle = 6.0 * t_pi_4
+		Vector2i(-1, -1):
+			t_angle = 7.0 * t_pi_4
+		_:
+			t_angle = 0.0	
+	t_sprite.rotation = t_angle
+	return t_sprite
+	
+	
+
+# Is `a_dir` N, S, E, W?
+func is_cardinal_dir(a_dir: Vector2i) -> bool:
+	var t_sum: int = absi(a_dir.x + a_dir.y)
+	return t_sum == 1
+
+
+# Is `a_dir` NE, SE, SW, NW?
+func is_semicardinal_dir(a_dir: Vector2i) -> bool:
+	if a_dir == Vector2i.ZERO: return false
+	var t_sum: int = absi(a_dir.x + a_dir.y)
+	return t_sum != 1
+
+
+#
+func display_track() -> void:
+	for i_coord: Vector2i in squares.keys():
+		var t_square: Square = squares[i_coord]
+		if t_square.is_block:
+			add_block_at(i_coord, true)
+	
 
 
 # As it says
-#func get_mouse_pos() -> Vector2:
-	#return grid_rect.get_local_mouse_position()
+func get_mouse_coord() -> Vector2i:
+	return coords_from_pos(grid_rect.get_local_mouse_position())
 
 
 
@@ -175,25 +376,44 @@ func move_ships() -> void:
 	for i_ship: Ship in ships:
 		var t_path: DescretePath = i_ship.descrete_path
 		t_path.populate_padded_steps(t_tic_count, t_path.coords[0], t_path.coords[-1])
+		prints(coords_from_pos(i_ship.position), i_ship.velocity)
 	for i_tic: int in range(0, t_tic_count - 1):
+		var t_coords: Array[Vector2i] = occupied_coords()
+		for i_coord: Vector2i in t_coords:
+			handle_wall_collisions_at(i_coord, i_tic)
 		for i_ship: Ship in ships:
 			# Move ship
+			draw_trail_point(coords_from_pos(i_ship.position), i_ship.player)
+			i_ship.point_at_endpoint(i_tic)
 			var t_coord: Vector2i = i_ship.descrete_path.padded_steps[i_tic]
 			move_ship_to(i_ship, t_coord, Constants.MOVE_TIME)
 			# Create await timer with duration of move
 			await get_tree().create_timer(Constants.MOVE_TIME).timeout
-		var t_coords: Array[Vector2i] = occupied_coords()
+		t_coords = occupied_coords()
 		for i_coord: Vector2i in t_coords:
 			handle_collisions_at(i_coord)
-		for i_coord: Vector2i in t_coords:
-			handle_wall_collisions_at(i_coord)
+		fade_trail_markers()
+		#for i_coord: Vector2i in t_coords:
+			#handle_wall_collisions_at(i_coord)
 		#for i_ship: Ship in ships:
 			#var t_list: Array[Ship] = collision_list(i_ship, i_tic)
 			#if not t_list.is_empty():
 				#swap_ship_velocities(i_ship, t_list[0])
 				#i_ship.point_at_velocity()
 				#t_list[0].point_at_velocity()
+	await get_tree().create_timer(Constants.MOVE_TIME).timeout
 	all_moves_completed.emit()
+
+
+#
+func fade_trail_markers() -> void:
+	for i_player: int in trail_markers.keys():
+		var t_markers: Array = trail_markers[i_player]
+		for i_marker: Sprite2D in t_markers:
+			var t_mod: Color = i_marker.modulate
+			t_mod.a *= 0.9
+			i_marker.modulate = t_mod
+
 
 
 # At this momenet which squares are coccupied by a ship?
@@ -234,11 +454,11 @@ func handle_collisions_at(a_coords: Vector2i) -> void:
 		t_ship.set_velocity(t_new_velocities[i_index])
 		var t_path: DescretePath = t_ship.descrete_path
 		t_path.populate_padded_steps(t_tic_count, Vector2i.ZERO, t_ship.velocity)
-		t_ship.point_at_velocity()
+		#t_ship.point_at_velocity()
 
 
 #
-func handle_wall_collisions_at(a_coords: Vector2i) -> void:
+func handle_wall_collisions_at(a_coords: Vector2i, a_tic: int) -> void:
 	if not squares.has(a_coords): return
 	var t_square: Square = squares[a_coords]
 	if t_square == null: return
@@ -248,8 +468,12 @@ func handle_wall_collisions_at(a_coords: Vector2i) -> void:
 	var t_size: int = t_ships.size()
 	for i_index: int in range(t_size):
 		var t_ship: Ship = ships[i_index]
-		if is_wall_collision(t_square, t_ship.velocity):
+		var t_step: Vector2i = t_ship.descrete_path.padded_steps[a_tic]
+		#if is_wall_collision(t_square, t_ship.velocity):
+		if is_wall_collision(t_square, t_step):
 			var t_new_velocity: Vector2i = -2 * abs(t_normal) * t_ship.velocity + t_ship.velocity
+			#if t_square.is_corner() and not t_square.is_convex:
+				#t_new_velocity = Vector2i(t_new_velocity.y, t_new_velocity.x)
 			t_ship.set_velocity(t_new_velocity)
 			var t_tic_count: int = t_ship.descrete_path.padded_steps.size()
 			var t_path: DescretePath = t_ship.descrete_path
@@ -261,29 +485,51 @@ func handle_wall_collisions_at(a_coords: Vector2i) -> void:
 
 
 # Should a ship at `a_square` bounce?
-func is_wall_collision(a_square: Square, a_velocity: Vector2i) -> bool:
-	if a_velocity == Vector2i.ZERO: return false
+#func is_wall_collision(a_square: Square, a_velocity: Vector2i) -> bool:
+	#if a_velocity == Vector2i.ZERO: return false
+	#var t_normal: Vector2i = a_square.normal
+	#if a_square.is_corner():
+		#var t_is_opp_x: bool = is_opposing_sign(t_normal.x, a_velocity.x)
+		#var t_is_opp_y: bool = is_opposing_sign(t_normal.y, a_velocity.y)
+		#if a_square.is_convex:
+			#return t_is_opp_x and t_is_opp_y
+		#else:
+			#return t_is_opp_x or t_is_opp_y
+	#else:
+		#if t_normal.x == 0:
+			#return is_same_sign(-t_normal.y, a_velocity.y)
+		#else:
+			#return is_same_sign(-t_normal.x, a_velocity.x)
+
+
+func is_wall_collision(a_square: Square, a_step: Vector2i) -> bool:
+	if a_step == Vector2i.ZERO: return false
 	var t_normal: Vector2i = a_square.normal
 	if a_square.is_corner():
-		var t_x_same: bool = is_same_sign(t_normal.x, a_velocity.x)
-		var t_y_same: bool = is_same_sign(t_normal.y, a_velocity.y)
+		var t_is_opp_x: bool = is_opposing_sign(t_normal.x, a_step.x)
+		var t_is_opp_y: bool = is_opposing_sign(t_normal.y, a_step.y)
 		if a_square.is_convex:
-			return not t_x_same and not t_y_same
+			return t_is_opp_x and t_is_opp_y
 		else:
-			return not t_x_same or not t_y_same
+			return t_is_opp_x or t_is_opp_y
 	else:
 		if t_normal.x == 0:
-			return is_same_sign(-t_normal.y, a_velocity.y)
+			return is_same_sign(-t_normal.y, a_step.y)
 		else:
-			return is_same_sign(-t_normal.x, a_velocity.x)
+			return is_same_sign(-t_normal.x, a_step.x)
 
 
 # Note: Zero matches nothing
 func is_same_sign(a_int_0: int, a_int_1: int) -> bool:
 	if a_int_0 == 0 or a_int_1 == 0: return false
 	return sign(a_int_0) == sign(a_int_1)
-	
-	
+
+
+# 
+func is_opposing_sign(a_int_0: int, a_int_1: int) -> bool:
+	if a_int_0 == 0 or a_int_1 == 0: return false
+	return sign(a_int_0) != sign(a_int_1)
+
 
 # Returns random offset guaranteed to not wrap back to zero
 func _random_index_offset(a_array_size: int) -> int:
@@ -373,15 +619,37 @@ func distributed_bools(a_total: int, a_count: int) -> Array[bool]:
 # Note this means the incorrect path gets drawn when there is a collision
 func preserve_ship_paths() -> void:
 	for i_ship: Ship in ships:
-		var t_path: DescretePath = DescretePath.new()
-		t_path.coords = i_ship.descrete_path.coords
-		t_path.color = Constants.player_color[i_ship.player]
-		t_path.draw_points(t_path.coords)
-		descrete_path_register.append(t_path)
-		grid_rect.add_child(t_path)
-		t_path.global_position = i_ship.descrete_path.global_position
+		# TODO: Note - we no longer preserve the path all at once, but instead
+		# point by point
+		#var t_path: DescretePath = DescretePath.new()
+		#t_path.coords = i_ship.descrete_path.coords
+		#t_path.color = Constants.player_color[i_ship.player]
+		#t_path.draw_points(t_path.coords)
+		#descrete_path_register.append(t_path)
+		#grid_rect.add_child(t_path)
+		#t_path.global_position = i_ship.descrete_path.global_position
 		i_ship.descrete_path.clear_line()
 	fade_descrete_paths()
+
+
+func draw_trail_point(a_coord: Vector2i, a_player: int) -> void:
+	var t_sprite: Sprite2D = Sprite2D.new()
+	t_sprite.texture = Constants.WHITE_TILE
+	t_sprite.modulate = Constants.player_color[a_player]
+	t_sprite.modulate.a = 0.85
+	t_sprite.scale = 0.15 * Vector2.ONE
+	grid_rect.add_child(t_sprite)
+	t_sprite.position = a_coord * Constants.ORIGINAL_SQUARE_SIZE
+	var t_markers: Array
+	t_markers = [] if not trail_markers.has(a_player) else trail_markers[a_player]
+	t_markers.append(t_sprite)
+	trail_markers[a_player] = t_markers
+	#if not point_markers.is_empty():
+		#point_markers.back().modulate.a = 1.0
+		#point_markers.back().scale = 0.25 * Vector2i.ONE
+
+
+
 
 
 # As it says
@@ -408,8 +676,25 @@ func remove_old_paths() -> void:
 # Note this is used to move `a_ship` one square on a valid tic
 func move_ship_to(a_ship: Ship, a_coord: Vector2i, a_duration: float) -> void:
 	var t_end: Vector2 = a_ship.position + Constants.ORIGINAL_SQUARE_SIZE * a_coord
+	# Check that we are not trying to move into a wall
+	if is_block_at_pos(t_end):
+		pass
+		#t_end = a_ship.position
 	var t_tween: Tween = get_tree().create_tween()
 	t_tween.tween_property(a_ship, "position", t_end, a_duration)
+
+
+#
+func is_block_at_pos(a_pos: Vector2) -> bool:
+	return  is_block_at_coord(coords_from_pos(a_pos))
+
+
+#
+func is_block_at_coord(a_coord: Vector2i) -> bool:
+	if not squares.has(a_coord): return false
+	var t_square: Square = squares[a_coord]
+	return t_square.is_block
+
 
 
 # Actions to perform when `a_ship` is selected

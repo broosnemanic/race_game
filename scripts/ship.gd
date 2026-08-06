@@ -153,6 +153,28 @@ func point_at_velocity() -> void:
 	#marker_arrow.point_along_coords(Vector2.ZERO, t_pos)
 
 
+# Point at predicted destination given current tic
+func point_at_endpoint(a_tic: int) -> void:
+	var t_pos: Vector2 = endpoint_from_tic(a_tic) * Constants.ORIGINAL_SQUARE_SIZE
+	#var t_pos: Vector2 = descrete_path.coords.back() * Constants.ORIGINAL_SQUARE_SIZE
+	#var t_pos: Vector2 = path.back() * Constants.ORIGINAL_SQUARE_SIZE
+	var t_tween: Tween = get_tree().create_tween()
+	t_tween.tween_method(point_at_position, marker_pointer.points[1], t_pos, Constants.MOVE_TIME)
+	point_at_position(t_pos)
+	#prints(t_pos, position)
+	#marker_pointer.points[1] = t_pos
+	#marker_arrow.position = t_pos
+	#marker_arrow.point_along_coords(Vector2.ZERO, t_pos)
+
+
+# Predicted destination (relative to `this`) starting from `a_tic`
+func endpoint_from_tic(a_tic: int) -> Vector2i:
+	var t_pos: Vector2i = Vector2i.ZERO
+	for i_index: int in range(a_tic + 1, descrete_path.padded_steps.size()):
+		t_pos += descrete_path.padded_steps[i_index]
+	return t_pos
+	
+	
 
 func point_at_position(a_pos: Vector2) -> void:
 	marker_pointer.points[1] = a_pos
@@ -162,12 +184,12 @@ func point_at_position(a_pos: Vector2) -> void:
 
 
 
-func display_markers(a_is_displayed: bool) -> void:
-	for i_index: int in range(markers.size()):
-		var t_marker: Marker = markers[i_index]
-		t_marker.set_enabled(a_is_displayed)
-		if a_is_displayed:
-			t_marker.coord = max_accelerations.keys()[i_index]
+#func display_markers(a_is_displayed: bool) -> void:
+	#for i_index: int in range(markers.size()):
+		#var t_marker: Marker = markers[i_index]
+		#t_marker.set_enabled(a_is_displayed)
+		#if a_is_displayed:
+			#t_marker.coord = max_accelerations.keys()[i_index]
 
 
 func on_marker_selected(a_marker: Marker) -> void:

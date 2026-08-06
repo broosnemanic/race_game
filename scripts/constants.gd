@@ -1,5 +1,9 @@
 extends Node
 
+
+enum SQUARE_TYPE{BLOCK}
+
+
 # Starts at zero deg -> ccw; pos y: downwards
 const directions: Array[Vector2i] = [	Vector2i(1, 0),
 										Vector2i(1, -1),
@@ -22,6 +26,8 @@ const MOVE_TIME: float = 0.2
 # Tiling grid image is 256 px with 4x4 squares
 const ORIGINAL_SQUARE_SIZE: float = 256.0 / 4.0
 const WHITE_TILE: Texture2D = preload("uid://o1lgoog0pi14")
+const LIGHT_TILE: Texture2D = preload("uid://crkmjka1gcgkc")
+
 
 const MARKER_COLOR: Color = Color.DARK_GREEN
 
