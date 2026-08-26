@@ -26,7 +26,7 @@ func _ready() -> void:
 	pass
 
 
-# Unused
+# Used for debugging
 func _process(_delta: float) -> void:
 	var t_mouse_coord: Vector2i = get_mouse_coord()
 	if t_mouse_coord != _last_mouse_coord:
@@ -35,6 +35,7 @@ func _process(_delta: float) -> void:
 		_last_mouse_coord = t_mouse_coord
 
 
+# 
 func _input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and is_edit_mode:
 		var t_event: InputEventMouseButton = event
@@ -50,12 +51,13 @@ func _input(event: InputEvent) -> void:
 			if t_event.keycode == KEY_L:
 				load_track()
 
-#
+
+# As it says
 func add_block_at_mouse_pos(a_is_add: bool) -> void:
 	add_block_at(get_mouse_coord(), a_is_add)
 
 
-#
+# Used for building a track; populates track_data (to be saved to file)
 func add_block_at(a_coord: Vector2i, a_is_add: bool) -> void:
 	var t_block_sprite: Sprite2D
 	if not a_is_add:
@@ -75,7 +77,7 @@ func add_block_at(a_coord: Vector2i, a_is_add: bool) -> void:
 		t_block_sprite.position = pos_from_coords(a_coord)
 
 
-#
+# As it says
 func new_block_sprite() -> Sprite2D:
 	var t_sprite: Sprite2D = Sprite2D.new()
 	t_sprite.texture = Constants.LIGHT_TILE
@@ -83,7 +85,7 @@ func new_block_sprite() -> Sprite2D:
 	return t_sprite
 
 
-#
+# TODO: add arg for file name
 func save_track() -> void:
 	var t_file: FileAccess = FileAccess.open("user://save_game.dat", FileAccess.WRITE)
 	var t_string: String = var_to_str(track_data)
@@ -92,7 +94,7 @@ func save_track() -> void:
 	t_file.close()
 
 
-#
+# TODO: add arg for file name
 func load_track() -> void:
 	var t_file: FileAccess = FileAccess.open("user://save_game.dat", FileAccess.READ)
 	track_data = str_to_var(t_file.get_as_text())
@@ -127,8 +129,6 @@ func process_track_data() -> void:
 		grid_rect.add_child(t_sprite)
 		t_sprite.position = pos_from_coords(i_coord)
 
-	
-
 
 # Returns set of normals surrounding a block at `a_coord`
 func normal_set_from_coord(a_coord: Vector2i) -> Dictionary[Vector2i, Vector2i]:
@@ -162,7 +162,7 @@ func process_corners() -> void:
 			t_square.is_convex = is_convex_corner(i_coord)
 
 
-# 
+# As it says
 func is_convex_corner(a_coord: Vector2i) -> bool:
 	if not squares.has(a_coord): return false
 	var t_square: Square = squares[a_coord]
@@ -173,6 +173,7 @@ func is_convex_corner(a_coord: Vector2i) -> bool:
 	return true
 
 
+# For debugging
 func arrow_from_normal(a_normal: Vector2i) -> Sprite2D:
 	var t_sprite: Sprite2D = Sprite2D.new()
 	t_sprite.texture = ARROW_N
@@ -217,28 +218,17 @@ func is_semicardinal_dir(a_dir: Vector2i) -> bool:
 	return t_sum != 1
 
 
-#
+# Display currently loaded track
 func display_track() -> void:
 	for i_coord: Vector2i in squares.keys():
 		var t_square: Square = squares[i_coord]
 		if t_square.is_block:
 			add_block_at(i_coord, true)
-	
 
 
 # As it says
 func get_mouse_coord() -> Vector2i:
 	return coords_from_pos(grid_rect.get_local_mouse_position())
-
-
-
-#func ship_at_mouse_pos() -> Ship:
-	#var t_mouse_coords: Vector2i = coords_from_pos(get_mouse_pos())
-	#for i_ship: Ship in ships:
-		#var t_ship_coord: Vector2i = coords_from_pos(i_ship.position)
-		#if t_mouse_coords == t_ship_coord:
-			#return i_ship
-	#return null
 
 
 # Size of one square in pixels
@@ -311,72 +301,19 @@ func on_move_selected(a_ship: Ship) -> void:
 	ship_move_selected.emit(a_ship)
 
 
-# TODO: retool collisions to allow overlaps; imp non-overlap tidying
-func move_ships_old() -> void:
-	preserve_ship_paths()
-	# Find tic count
-	var t_tic_count: int = 0
-	for i_ship: Ship in ships:
-		t_tic_count = maxi(t_tic_count, i_ship.descrete_path.count())
-	# Loop through tics
-	for i_ship: Ship in ships:
-		var t_path: DescretePath = i_ship.descrete_path
-		t_path.populate_padded_steps(t_tic_count, t_path.coords[0], t_path.coords[-1])
-	for i_tic: int in range(0, t_tic_count - 1):
-		for i_ship: Ship in ships:
-				# TODO: Look ahead to see if a collision would happen
-				# then swap velocities to avoid collision
-				var t_list: Array[Ship] = collision_list(i_ship, i_tic)
-				if not t_list.is_empty():
-					swap_ship_velocities(i_ship, t_list[0])
-					i_ship.point_at_velocity()
-					t_list[0].point_at_velocity()
-				# Create tween to move i_ship the next step
-				var t_coord: Vector2i = i_ship.descrete_path.padded_steps[i_tic]
-				move_ship_to(i_ship, t_coord, Constants.MOVE_TIME)
-				# Create await timer with duration of move
-				await get_tree().create_timer(Constants.MOVE_TIME).timeout
-	all_moves_completed.emit()
-
-
-func move_ships_OLD() -> void:
-	preserve_ship_paths()
-	# Find tic count
-	var t_tic_count: int = 0
-	for i_ship: Ship in ships:
-		t_tic_count = maxi(t_tic_count, i_ship.descrete_path.count())
-	# Loop through tics
-	for i_ship: Ship in ships:
-		var t_path: DescretePath = i_ship.descrete_path
-		t_path.populate_padded_steps(t_tic_count, t_path.coords[0], t_path.coords[-1])
-	for i_tic: int in range(0, t_tic_count - 1):
-		for i_ship: Ship in ships:
-				# TODO: Look ahead to see if a collision would happen
-				# then swap velocities to avoid collision
-				var t_list: Array[Ship] = collision_list(i_ship, i_tic)
-				if not t_list.is_empty():
-					swap_ship_velocities(i_ship, t_list[0])
-					i_ship.point_at_velocity()
-					t_list[0].point_at_velocity()
-				# Create tween to move i_ship the next step
-				var t_coord: Vector2i = i_ship.descrete_path.padded_steps[i_tic]
-				move_ship_to(i_ship, t_coord, Constants.MOVE_TIME)
-				# Create await timer with duration of move
-				await get_tree().create_timer(Constants.MOVE_TIME).timeout
-	all_moves_completed.emit()
-
-
+# TODO: imp non-overlap tidying
 func move_ships() -> void:
 	preserve_ship_paths()
 	# Tic count = max move count of all ships this turn
 	var t_tic_count: int = 0
 	for i_ship: Ship in ships:
 		t_tic_count = maxi(t_tic_count, i_ship.descrete_path.count())
-	# Loop through tics
+	# Pad all ship paths to have length wqual to `t_tic_count`
 	for i_ship: Ship in ships:
 		var t_path: DescretePath = i_ship.descrete_path
 		t_path.populate_padded_steps(t_tic_count, t_path.coords[0], t_path.coords[-1])
 		prints(coords_from_pos(i_ship.position), i_ship.velocity)
+	# Loop through tics
 	for i_tic: int in range(0, t_tic_count - 1):
 		var t_coords: Array[Vector2i] = occupied_coords()
 		for i_coord: Vector2i in t_coords:
@@ -389,6 +326,7 @@ func move_ships() -> void:
 			move_ship_to(i_ship, t_coord, Constants.MOVE_TIME)
 			# Create await timer with duration of move
 			await get_tree().create_timer(Constants.MOVE_TIME).timeout
+		recenter_ships()
 		t_coords = occupied_coords()
 		for i_coord: Vector2i in t_coords:
 			handle_collisions_at(i_coord)
@@ -401,18 +339,47 @@ func move_ships() -> void:
 				#swap_ship_velocities(i_ship, t_list[0])
 				#i_ship.point_at_velocity()
 				#t_list[0].point_at_velocity()
-	await get_tree().create_timer(Constants.MOVE_TIME).timeout
+	if t_tic_count <= 1:	# Ensures at least on wait interval (to properly sych)
+		await get_tree().create_timer(Constants.MOVE_TIME).timeout
 	all_moves_completed.emit()
 
 
 #
 func fade_trail_markers() -> void:
 	for i_player: int in trail_markers.keys():
+		# Remove nulls from set of trail markers for `i_player`
 		var t_markers: Array = trail_markers[i_player]
+		trail_markers[i_player] = null_trimmed_array(t_markers)
+		t_markers = trail_markers[i_player]
+		# Fade markers
 		for i_marker: Sprite2D in t_markers:
 			var t_mod: Color = i_marker.modulate
 			t_mod.a *= 0.9
 			i_marker.modulate = t_mod
+		# Remove invisible markers
+		for i_index: int in range(t_markers.size()):
+			var t_marker: Sprite2D = t_markers[i_index]
+			if t_marker.modulate.a < 0.1:
+				t_marker.queue_free()
+				t_markers[i_index] = null
+
+
+# Returns copy of `a_array` with no null items 
+func null_trimmed_array(a_array: Array) -> Array:
+	var t_array: Array = []
+	for i_index: int in range(a_array.size()):
+		if a_array[i_index] != null:
+			t_array.append(a_array[i_index])
+	return t_array
+
+
+# Snap all ships to center of occupied square
+func recenter_ships() -> void:
+	for i_ship: Ship in ships:
+		var t_pos: Vector2 = i_ship.position
+		t_pos = pos_from_coords(coords_from_pos(t_pos))
+		i_ship.position = t_pos 
+
 
 
 
@@ -472,8 +439,6 @@ func handle_wall_collisions_at(a_coords: Vector2i, a_tic: int) -> void:
 		#if is_wall_collision(t_square, t_ship.velocity):
 		if is_wall_collision(t_square, t_step):
 			var t_new_velocity: Vector2i = -2 * abs(t_normal) * t_ship.velocity + t_ship.velocity
-			#if t_square.is_corner() and not t_square.is_convex:
-				#t_new_velocity = Vector2i(t_new_velocity.y, t_new_velocity.x)
 			t_ship.set_velocity(t_new_velocity)
 			var t_tic_count: int = t_ship.descrete_path.padded_steps.size()
 			var t_path: DescretePath = t_ship.descrete_path
@@ -481,27 +446,7 @@ func handle_wall_collisions_at(a_coords: Vector2i, a_tic: int) -> void:
 			t_ship.point_at_velocity()
 
 
-
-
-
-# Should a ship at `a_square` bounce?
-#func is_wall_collision(a_square: Square, a_velocity: Vector2i) -> bool:
-	#if a_velocity == Vector2i.ZERO: return false
-	#var t_normal: Vector2i = a_square.normal
-	#if a_square.is_corner():
-		#var t_is_opp_x: bool = is_opposing_sign(t_normal.x, a_velocity.x)
-		#var t_is_opp_y: bool = is_opposing_sign(t_normal.y, a_velocity.y)
-		#if a_square.is_convex:
-			#return t_is_opp_x and t_is_opp_y
-		#else:
-			#return t_is_opp_x or t_is_opp_y
-	#else:
-		#if t_normal.x == 0:
-			#return is_same_sign(-t_normal.y, a_velocity.y)
-		#else:
-			#return is_same_sign(-t_normal.x, a_velocity.x)
-
-
+# Will stepping _out_ of `a_square` in direction `a_step` result in being inside a wall?
 func is_wall_collision(a_square: Square, a_step: Vector2i) -> bool:
 	if a_step == Vector2i.ZERO: return false
 	var t_normal: Vector2i = a_square.normal
@@ -678,6 +623,7 @@ func move_ship_to(a_ship: Ship, a_coord: Vector2i, a_duration: float) -> void:
 	var t_end: Vector2 = a_ship.position + Constants.ORIGINAL_SQUARE_SIZE * a_coord
 	# Check that we are not trying to move into a wall
 	if is_block_at_pos(t_end):
+		# TODO: debugging
 		pass
 		#t_end = a_ship.position
 	var t_tween: Tween = get_tree().create_tween()

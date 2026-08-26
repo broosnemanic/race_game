@@ -10,6 +10,18 @@ var ships: Array[Ship] = []
 var ship_ready_report: Array[bool] = []
 var turn_index: int
 
+var ship_inits: Array[ShipInit] = [ShipInit.new(Vector2i(26, 40), Vector2i(0, 0)),
+									ShipInit.new(Vector2i(28, 40), Vector2i(0, 0))]
+
+class ShipInit:
+	func _init(a_position: Vector2i, a_velocity: Vector2i) -> void:
+		position = a_position
+		velocity = a_velocity
+	var position: Vector2i
+	var velocity: Vector2i
+
+
+
 
 func _ready() -> void:
 	#board_setup()
@@ -67,12 +79,15 @@ func new_game(a_player_count: int, a_bot_count: int) -> void:
 	ships = []
 	for i_index: int in range(a_player_count + a_bot_count):
 		var t_ship: Ship = ship_prefab.instantiate()
+		var t_init: ShipInit = ship_inits[i_index]
 		t_ship.is_bot = i_index >= a_player_count
 		ships.append(t_ship)
 		t_ship.set_player(i_index)
 		board.add_ship(t_ship)
 		t_ship.z_index = Constants.SHIP_Z_INDEX
-		t_ship.position = start_pos_from_player(t_ship.player)
+		t_ship.position = t_init.position * Constants.ORIGINAL_SQUARE_SIZE
+		t_ship.set_velocity(t_init.velocity)
+		#t_ship.position = start_pos_from_player(t_ship.player)
 		#if i_index == 0:
 			#t_ship.set_velocity(Vector2i(0, -5))
 		#if i_index == 1:
@@ -95,9 +110,9 @@ func start_turn() -> void:
 func start_pos_from_player(a_player: int) -> Vector2:
 	var t_coord: Vector2i = Vector2i(1 * a_player + 26, 40)
 	if a_player == 0:
-		t_coord = Vector2i(32, 39)
-		ships[0].set_velocity(Vector2i(1, 0))
-
+		t_coord = Vector2i(32, 27)
+		ships[0].set_velocity(Vector2i(3, -2))
+	
 	return board.pos_from_coords(t_coord)# + board.board_camera.offset
 
 
