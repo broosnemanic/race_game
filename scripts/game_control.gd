@@ -7,11 +7,15 @@ extends Node2D
 var board: Board
 var active_player: int = 0
 var ships: Array[Ship] = []
+var player_order: Array[int] = []			# Order in which players move (also bump priority)
 var ship_ready_report: Array[bool] = []
 var turn_index: int
+const PLAYER_COUNT = 3
 
 var ship_inits: Array[ShipInit] = [ShipInit.new(Vector2i(26, 40), Vector2i(0, 0)),
-									ShipInit.new(Vector2i(28, 40), Vector2i(0, 0))]
+									ShipInit.new(Vector2i(28, 40), Vector2i(0, 0)),
+									ShipInit.new(Vector2i(30, 40), Vector2i(0, 0)),
+									ShipInit.new(Vector2i(32, 40), Vector2i(0, 0))]
 
 class ShipInit:
 	func _init(a_position: Vector2i, a_velocity: Vector2i) -> void:
@@ -28,13 +32,14 @@ func _ready() -> void:
 	board = board_prefab.instantiate()
 	board_container.add_child(board)
 	await get_tree().process_frame
-	board.square_size = 64.0
+	#board.square_size = 64.0
+	board.square_size = 128.0
 	board.grid_size = Vector2i(64, 64)
 	board.center_camera()
-	board.board_camera.zoom = Vector2(0.5, 0.5)
+	board.board_camera.zoom = Vector2(0.25, 0.25)
 	board.ship_move_selected.connect(on_ship_move_selected)
 	#setup_track()
-	new_game(1, 0)
+	new_game(PLAYER_COUNT, 0)
 	#activate_board_edit_mode()
 	await get_tree().process_frame
 
@@ -77,6 +82,7 @@ func board_setup() -> void:
 # 
 func new_game(a_player_count: int, a_bot_count: int) -> void:
 	ships = []
+	init_player_player_order(a_player_count + a_bot_count)
 	for i_index: int in range(a_player_count + a_bot_count):
 		var t_ship: Ship = ship_prefab.instantiate()
 		var t_init: ShipInit = ship_inits[i_index]
@@ -84,8 +90,12 @@ func new_game(a_player_count: int, a_bot_count: int) -> void:
 		ships.append(t_ship)
 		t_ship.set_player(i_index)
 		board.add_ship(t_ship)
+		t_ship.shadow.modulate = Constants.player_color[i_index]
+		t_ship.shadow.modulate.a = 0.25
 		t_ship.z_index = Constants.SHIP_Z_INDEX
-		t_ship.position = t_init.position * Constants.ORIGINAL_SQUARE_SIZE
+		t_ship.square_size = board.square_size
+		#t_ship.position = t_init.position * Constants.ORIGINAL_SQUARE_SIZE
+		t_ship.position = t_init.position * board.square_size
 		t_ship.set_velocity(t_init.velocity)
 		#t_ship.position = start_pos_from_player(t_ship.player)
 		#if i_index == 0:
@@ -101,8 +111,21 @@ func new_game(a_player_count: int, a_bot_count: int) -> void:
 	board.load_track()
 
 
+# Starting order == player index
+func init_player_player_order(a_total_count: int) -> void:
+	for i_index: int in range(a_total_count):
+		player_order.append(i_index)
+
+
+#
+func increment_player_order() -> void:
+	for i_index: int in range(ships.size()):
+		player_order[i_index] = (player_order[i_index] + 1) % ships.size()
+ 
+
 #
 func start_turn() -> void:
+	print(player_order)
 	board.select_first_ship()
 
 
@@ -122,6 +145,7 @@ func on_ship_move_selected(a_ship: Ship) -> void:
 	if is_all_ships_ready():
 		board.move_ships()
 		reset_ship_ready_report()
+		increment_player_order()
 		await board.all_moves_completed
 		start_turn()
 	else:

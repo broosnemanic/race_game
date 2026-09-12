@@ -1,12 +1,26 @@
 [gd_scene format=3 uid="uid://5j6keqmi6dvl"]
 
 [ext_resource type="Script" uid="uid://7vm85tj3unsh" path="res://scripts/game_control.gd" id="1_tu4ud"]
+[ext_resource type="Texture2D" uid="uid://c5yc31ixm5jyg" path="res://textures/shadow_border.png" id="2_ky06o"]
+[ext_resource type="PackedScene" uid="uid://dqr0cnm7olwjp" path="res://scenes/player_label.tscn" id="2_p7u1o"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_tu4ud"]
-bg_color = Color(0.8914368, 0.47443634, 3.85046e-07, 1)
+bg_color = Color(0.44313726, 0.6, 0.6627451, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ky06o"]
+bg_color = Color(0.44313726, 0.6, 0.6627451, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bvhp6"]
+bg_color = Color(0.44378647, 0.60135734, 0.6642273, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bg7xb"]
+bg_color = Color(0, 0, 0, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_3myco"]
+bg_color = Color(0.44313726, 0.6, 0.6627451, 1)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_p7u1o"]
-bg_color = Color(1.92523e-07, 0.6594781, 0.84755117, 1)
+bg_color = Color(0.44313726, 0.6, 0.6627451, 1)
 
 [node name="GameControl" type="Node2D" unique_id=1712009764]
 script = ExtResource("1_tu4ud")
@@ -19,6 +33,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+theme_override_constants/separation = 0
 
 [node name="MenuBox" type="HBoxContainer" parent="CanvasLayer/TopBox" unique_id=2051162104]
 layout_mode = 2
@@ -33,8 +48,19 @@ theme_override_styles/panel = SubResource("StyleBoxFlat_tu4ud")
 [node name="CentralBox" type="HBoxContainer" parent="CanvasLayer/TopBox" unique_id=18388518]
 layout_mode = 2
 size_flags_vertical = 3
+size_flags_stretch_ratio = 1.13
+
+[node name="VBoxContainer2" type="VBoxContainer" parent="CanvasLayer/TopBox/CentralBox" unique_id=1346255484]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="PanelContainer" type="PanelContainer" parent="CanvasLayer/TopBox/CentralBox/VBoxContainer2" unique_id=121628314]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_ky06o")
 
 [node name="PanelContainer" type="PanelContainer" parent="CanvasLayer/TopBox/CentralBox" unique_id=201957960]
+custom_minimum_size = Vector2(1500, 820)
 layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 1
@@ -43,6 +69,74 @@ mouse_filter = 1
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
+
+[node name="NinePatchRect" type="NinePatchRect" parent="CanvasLayer/TopBox/CentralBox/PanelContainer" unique_id=595987142]
+layout_mode = 2
+texture = ExtResource("2_ky06o")
+draw_center = false
+patch_margin_left = 10
+patch_margin_top = 10
+patch_margin_right = 10
+patch_margin_bottom = 10
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CanvasLayer/TopBox/CentralBox" unique_id=964233621]
+custom_minimum_size = Vector2(256, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 0
+
+[node name="PanelContainer2" type="PanelContainer" parent="CanvasLayer/TopBox/CentralBox/VBoxContainer" unique_id=1871286316]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_bvhp6")
+
+[node name="MarginContainer" type="MarginContainer" parent="CanvasLayer/TopBox/CentralBox/VBoxContainer/PanelContainer2" unique_id=1449483235]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 10
+
+[node name="PanelContainer" type="PanelContainer" parent="CanvasLayer/TopBox/CentralBox/VBoxContainer/PanelContainer2/MarginContainer" unique_id=1067118677]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_bg7xb")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CanvasLayer/TopBox/CentralBox/VBoxContainer/PanelContainer2/MarginContainer/PanelContainer" unique_id=1295584066]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="MarginContainer" type="MarginContainer" parent="CanvasLayer/TopBox/CentralBox/VBoxContainer/PanelContainer2/MarginContainer/PanelContainer/VBoxContainer" unique_id=1521742090]
+layout_mode = 2
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CanvasLayer/TopBox/CentralBox/VBoxContainer/PanelContainer2/MarginContainer/PanelContainer/VBoxContainer/MarginContainer" unique_id=1984914248]
+layout_mode = 2
+
+[node name="PanelContainer2" parent="CanvasLayer/TopBox/CentralBox/VBoxContainer/PanelContainer2/MarginContainer/PanelContainer/VBoxContainer/MarginContainer/VBoxContainer" unique_id=533402539 instance=ExtResource("2_p7u1o")]
+layout_mode = 2
+size_flags_horizontal = 4
+
+[node name="PanelContainer" parent="CanvasLayer/TopBox/CentralBox/VBoxContainer/PanelContainer2/MarginContainer/PanelContainer/VBoxContainer/MarginContainer/VBoxContainer" unique_id=321058597 instance=ExtResource("2_p7u1o")]
+layout_mode = 2
+size_flags_horizontal = 4
+
+[node name="PanelContainer3" parent="CanvasLayer/TopBox/CentralBox/VBoxContainer/PanelContainer2/MarginContainer/PanelContainer/VBoxContainer/MarginContainer/VBoxContainer" unique_id=1784341173 instance=ExtResource("2_p7u1o")]
+layout_mode = 2
+size_flags_horizontal = 4
+
+[node name="PanelContainer5" parent="CanvasLayer/TopBox/CentralBox/VBoxContainer/PanelContainer2/MarginContainer/PanelContainer/VBoxContainer/MarginContainer/VBoxContainer" unique_id=518806534 instance=ExtResource("2_p7u1o")]
+layout_mode = 2
+size_flags_horizontal = 4
+
+[node name="PanelContainer4" parent="CanvasLayer/TopBox/CentralBox/VBoxContainer/PanelContainer2/MarginContainer/PanelContainer/VBoxContainer/MarginContainer/VBoxContainer" unique_id=1011158197 instance=ExtResource("2_p7u1o")]
+layout_mode = 2
+size_flags_horizontal = 4
+
+[node name="Panel" type="Panel" parent="CanvasLayer/TopBox/CentralBox/VBoxContainer/PanelContainer2/MarginContainer/PanelContainer/VBoxContainer" unique_id=758144927]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_3myco")
 
 [node name="FooterBox" type="HBoxContainer" parent="CanvasLayer/TopBox" unique_id=1863985167]
 layout_mode = 2

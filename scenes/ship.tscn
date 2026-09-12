@@ -1,7 +1,8 @@
 [gd_scene format=3 uid="uid://un1trjqafx6p"]
 
 [ext_resource type="Script" uid="uid://d13nijibnvbyn" path="res://scripts/ship.gd" id="1_2gnfn"]
-[ext_resource type="Texture2D" uid="uid://d2edixov73sys" path="res://textures/ship_00.png" id="1_q631a"]
+[ext_resource type="Texture2D" uid="uid://bocan8kaotgl1" path="res://textures/ship_outline_00.png" id="2_4tobq"]
+[ext_resource type="Texture2D" uid="uid://cgn5uiyf5xyaq" path="res://textures/ship_fill_00.png" id="3_tfsc7"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_2gnfn"]
 radius = 31.780497
@@ -10,10 +11,12 @@ radius = 31.780497
 script = ExtResource("1_2gnfn")
 
 [node name="Sprite" type="Sprite2D" parent="." unique_id=1061569613]
-texture = ExtResource("1_q631a")
+scale = Vector2(0.5, 0.5)
+texture = ExtResource("2_4tobq")
 
 [node name="Shadow" type="Sprite2D" parent="." unique_id=832357521]
-visible = false
+scale = Vector2(0.5, 0.5)
+texture = ExtResource("3_tfsc7")
 
 [node name="Area" type="Area2D" parent="." unique_id=677697202 groups=["ship"]]
 

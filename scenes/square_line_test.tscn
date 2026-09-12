@@ -1,4 +1,4 @@
-[gd_scene load_steps=6 format=3 uid="uid://cu4ku71bqh0xw"]
+[gd_scene format=3 uid="uid://cu4ku71bqh0xw"]
 
 [ext_resource type="Script" uid="uid://bkm545h54a82y" path="res://square_line_test.gd" id="1_8qvbu"]
 [ext_resource type="Texture2D" uid="uid://dup115kj27cgg" path="res://textures/dot.png" id="1_poege"]
@@ -6,10 +6,10 @@
 [ext_resource type="Texture2D" uid="uid://crkmjka1gcgkc" path="res://textures/LightTile.png" id="4_ovk7v"]
 [ext_resource type="Texture2D" uid="uid://ek26j1nc2hyj" path="res://textures/highlight.png" id="5_3om0s"]
 
-[node name="Node2D" type="Node2D"]
+[node name="Node2D" type="Node2D" unique_id=1753826802]
 script = ExtResource("1_8qvbu")
 
-[node name="TextureRect" type="TextureRect" parent="."]
+[node name="TextureRect" type="TextureRect" parent="." unique_id=1798342306]
 offset_right = 1152.0
 offset_bottom = 648.0
 grow_horizontal = 2
@@ -19,18 +19,18 @@ size_flags_vertical = 3
 texture = ExtResource("3_1lw07")
 stretch_mode = 1
 
-[node name="Camera2D" type="Camera2D" parent="."]
+[node name="Camera2D" type="Camera2D" parent="." unique_id=553174866]
 zoom = Vector2(0.25, 0.25)
 
-[node name="Dot" type="Sprite2D" parent="."]
+[node name="Dot" type="Sprite2D" parent="." unique_id=1008108179]
 visible = false
 texture = ExtResource("1_poege")
 
-[node name="DarkTile" type="Sprite2D" parent="."]
+[node name="DarkTile" type="Sprite2D" parent="." unique_id=837295022]
 visible = false
 position = Vector2(63, 63)
 texture = ExtResource("4_ovk7v")
 
-[node name="Highlight" type="Sprite2D" parent="."]
+[node name="Highlight" type="Sprite2D" parent="." unique_id=765999440]
 position = Vector2(319, 320)
 texture = ExtResource("5_3om0s")

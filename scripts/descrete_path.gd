@@ -8,6 +8,8 @@ var point_markers: Array[Sprite2D] = []			# Graphical representation of points
 var color: Color = Color.FUCHSIA				# Default point_marker color
 var tic: int = 0								# Current place in coords list
 var padded_steps: Array[Vector2i]				# Unit steps composing entire path, padded to a length with ZERO steps 
+var square_size: float
+
 
 const POINT_TEXTURE: Texture2D = preload("uid://dup115kj27cgg")
 const ENDPOINT_TEXTURE: Texture2D = preload("uid://dipjdkw86aunk")
@@ -49,7 +51,8 @@ func draw_points(a_coords: Array[Vector2i]) -> void:
 		t_sprite.modulate.a = 0.85
 		t_sprite.scale = 0.15 * Vector2.ONE
 		add_child(t_sprite)
-		t_sprite.position = i_coord * Constants.ORIGINAL_SQUARE_SIZE
+		#t_sprite.position = i_coord * Constants.ORIGINAL_SQUARE_SIZE
+		t_sprite.position = i_coord * square_size
 		point_markers.append(t_sprite)
 	if not point_markers.is_empty():
 		point_markers.back().modulate.a = 1.0

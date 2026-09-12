@@ -50,6 +50,14 @@ func _input(event: InputEvent) -> void:
 				save_track()
 			if t_event.keycode == KEY_L:
 				load_track()
+	if event is InputEventMouseButton:
+		var t_zoom: float = 0.01
+		var t_event: InputEventMouseButton = event
+		if t_event.button_index == MOUSE_BUTTON_WHEEL_UP:
+			board_camera.zoom += t_zoom * Vector2.ONE
+		if t_event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+			board_camera.zoom -= t_zoom * Vector2.ONE
+
 
 
 # As it says
@@ -81,7 +89,8 @@ func add_block_at(a_coord: Vector2i, a_is_add: bool) -> void:
 func new_block_sprite() -> Sprite2D:
 	var t_sprite: Sprite2D = Sprite2D.new()
 	t_sprite.texture = Constants.LIGHT_TILE
-	t_sprite.scale = Vector2(0.5, 0.5)
+	#t_sprite.scale = Vector2(0.5, 0.5)
+	t_sprite.scale = Vector2.ONE
 	return t_sprite
 
 
@@ -235,8 +244,9 @@ func get_mouse_coord() -> Vector2i:
 var square_size: float:
 	set(a_size):
 		square_size = a_size
-		var t_scale: float = a_size / Constants.ORIGINAL_SQUARE_SIZE
-		grid_rect.scale = Vector2(t_scale, t_scale)
+		# TODO: is this necessary?
+		#var t_scale: float = a_size / Constants.ORIGINAL_SQUARE_SIZE
+		#grid_rect.scale = Vector2(t_scale, t_scale)
 
 
 # Size in squares
@@ -286,6 +296,7 @@ func select_ship(a_ship: Ship) -> void:
 
 # As it says
 func select_first_ship() -> void:
+
 	select_ship(ships[0])
 
 
@@ -312,7 +323,7 @@ func move_ships() -> void:
 	for i_ship: Ship in ships:
 		var t_path: DescretePath = i_ship.descrete_path
 		t_path.populate_padded_steps(t_tic_count, t_path.coords[0], t_path.coords[-1])
-		prints(coords_from_pos(i_ship.position), i_ship.velocity)
+		#prints(coords_from_pos(i_ship.position), i_ship.velocity)
 	# Loop through tics
 	for i_tic: int in range(0, t_tic_count - 1):
 		var t_coords: Array[Vector2i] = occupied_coords()
@@ -434,7 +445,7 @@ func handle_wall_collisions_at(a_coords: Vector2i, a_tic: int) -> void:
 	var t_ships: Array[Ship] = ships_at(a_coords)
 	var t_size: int = t_ships.size()
 	for i_index: int in range(t_size):
-		var t_ship: Ship = ships[i_index]
+		var t_ship: Ship = t_ships[i_index]	# Edited
 		var t_step: Vector2i = t_ship.descrete_path.padded_steps[a_tic]
 		#if is_wall_collision(t_square, t_ship.velocity):
 		if is_wall_collision(t_square, t_step):
@@ -444,6 +455,7 @@ func handle_wall_collisions_at(a_coords: Vector2i, a_tic: int) -> void:
 			var t_path: DescretePath = t_ship.descrete_path
 			t_path.populate_padded_steps(t_tic_count, Vector2i.ZERO, t_ship.velocity)
 			t_ship.point_at_velocity()
+			t_ship.point_ship_at_position(t_new_velocity)
 
 
 # Will stepping _out_ of `a_square` in direction `a_step` result in being inside a wall?
@@ -543,8 +555,10 @@ func collision_report() -> Dictionary[Vector2i, ArrayInt]:
 
 # Grid coords from position on board
 func coords_from_position(a_pos: Vector2) -> Vector2i:
-	var t_x: int = floori(a_pos.x / Constants.ORIGINAL_SQUARE_SIZE as float)
-	var t_y: int = floori(a_pos.y / Constants.ORIGINAL_SQUARE_SIZE as float)
+	#var t_x: int = floori(a_pos.x / Constants.ORIGINAL_SQUARE_SIZE as float)
+	#var t_y: int = floori(a_pos.y / Constants.ORIGINAL_SQUARE_SIZE as float)
+	var t_x: int = floori(a_pos.x / square_size)
+	var t_y: int = floori(a_pos.y / square_size)
 	return Vector2i(t_x, t_y)
 
 
@@ -584,7 +598,8 @@ func draw_trail_point(a_coord: Vector2i, a_player: int) -> void:
 	t_sprite.modulate.a = 0.85
 	t_sprite.scale = 0.15 * Vector2.ONE
 	grid_rect.add_child(t_sprite)
-	t_sprite.position = a_coord * Constants.ORIGINAL_SQUARE_SIZE
+	#t_sprite.position = a_coord * Constants.ORIGINAL_SQUARE_SIZE
+	t_sprite.position = a_coord * square_size
 	var t_markers: Array
 	t_markers = [] if not trail_markers.has(a_player) else trail_markers[a_player]
 	t_markers.append(t_sprite)
@@ -620,7 +635,8 @@ func remove_old_paths() -> void:
 
 # Note this is used to move `a_ship` one square on a valid tic
 func move_ship_to(a_ship: Ship, a_coord: Vector2i, a_duration: float) -> void:
-	var t_end: Vector2 = a_ship.position + Constants.ORIGINAL_SQUARE_SIZE * a_coord
+	#var t_end: Vector2 = a_ship.position + Constants.ORIGINAL_SQUARE_SIZE * a_coord
+	var t_end: Vector2 = a_ship.position + square_size * a_coord
 	# Check that we are not trying to move into a wall
 	if is_block_at_pos(t_end):
 		# TODO: debugging

@@ -4,6 +4,7 @@ class_name Ship
 signal move_selected(a_ship: Ship)
 
 @onready var sprite: Sprite2D = $Sprite
+@onready var shadow: Sprite2D = $Shadow
 @onready var area: Area2D = $Area
 @onready var marker_prefab: PackedScene = preload("res://scenes/marker.tscn")
 
@@ -21,6 +22,7 @@ var is_bot: bool = false
 var marker_arrow: ArrowHead
 var line_squares: Array[Sprite2D] = []
 var descrete_path: DescretePath = DescretePath.new()
+var square_size: float									# How far is one unit of movment? (set from `board.square_size`)
 
 const LIGHT_TILE: Texture2D = preload("uid://crkmjka1gcgkc")
 
@@ -64,12 +66,12 @@ func setup_arrowhead() -> void:
 	marker_pointer.add_child(marker_arrow)
 
 
-func handle_marker_pointer() -> void:
-	if pointed_marker != null:
-		marker_pointer.visible = true
-		point_at_marker(pointed_marker)
-	else:
-		marker_pointer.visible = false
+#func handle_marker_pointer() -> void:
+	#if pointed_marker != null:
+		#marker_pointer.visible = true
+		#point_at_marker(pointed_marker)
+	#else:
+		#marker_pointer.visible = false
 
 
 # Default 1 acc in all directions
@@ -109,7 +111,8 @@ func add_new_marker(a_acc: Vector2i) -> Marker:
 		t_marker.mouse_entered.connect(on_mouse_enter_marker.bind(t_marker))
 		t_marker.coord = a_acc
 		add_child(t_marker)
-		t_marker.position = (velocity + t_marker.coord) * Constants.ORIGINAL_SQUARE_SIZE
+		#t_marker.position = (velocity + t_marker.coord) * Constants.ORIGINAL_SQUARE_SIZE
+		t_marker.position = (velocity + t_marker.coord) * square_size
 		if a_acc == Vector2i.ZERO:
 			t_marker.target_marker.modulate = Color.FUCHSIA
 		return t_marker
@@ -121,6 +124,7 @@ func on_mouse_enter_marker(a_marker: Marker) -> void:
 
 
 func point_at_marker(a_marker: Marker) -> void:
+	# Point arrow at marker
 	marker_pointer.points[1] = a_marker.position
 	marker_arrow.position = marker_pointer.points[1]
 	marker_arrow.point_along_coords(Vector2.ZERO, a_marker.position)
@@ -129,9 +133,19 @@ func point_at_marker(a_marker: Marker) -> void:
 	descrete_path.clear_line()
 	descrete_path = DescretePath.new()
 	descrete_path.color = Constants.player_color[player]
+	descrete_path.square_size = square_size
 	add_child(descrete_path)
 	descrete_path.draw_from_endpoints(Vector2i.ZERO, a_marker.coord + velocity)
 	path = descrete_path.coords
+	# Point ship at marker
+	point_ship_at_position(a_marker.position)
+
+
+#
+func point_ship_at_position(a_position: Vector2) -> void:
+	var t_angle: float = a_position.angle() + 0.5 * PI
+	sprite.rotation = t_angle
+	shadow.rotation = t_angle
 
 
 # 
@@ -144,7 +158,8 @@ func set_velocity(a_velocity: Vector2i) -> void:
 
 
 func point_at_velocity() -> void:
-	var t_pos: Vector2 = velocity * Constants.ORIGINAL_SQUARE_SIZE
+	#var t_pos: Vector2 = velocity * Constants.ORIGINAL_SQUARE_SIZE
+	var t_pos: Vector2 = velocity * square_size
 	var t_tween: Tween = get_tree().create_tween()
 	t_tween.tween_method(point_at_position, marker_pointer.points[1], t_pos, Constants.MOVE_TIME)
 	point_at_position(t_pos)
@@ -155,7 +170,8 @@ func point_at_velocity() -> void:
 
 # Point at predicted destination given current tic
 func point_at_endpoint(a_tic: int) -> void:
-	var t_pos: Vector2 = endpoint_from_tic(a_tic) * Constants.ORIGINAL_SQUARE_SIZE
+	#var t_pos: Vector2 = endpoint_from_tic(a_tic) * Constants.ORIGINAL_SQUARE_SIZE
+	var t_pos: Vector2 = endpoint_from_tic(a_tic) * square_size
 	#var t_pos: Vector2 = descrete_path.coords.back() * Constants.ORIGINAL_SQUARE_SIZE
 	#var t_pos: Vector2 = path.back() * Constants.ORIGINAL_SQUARE_SIZE
 	var t_tween: Tween = get_tree().create_tween()

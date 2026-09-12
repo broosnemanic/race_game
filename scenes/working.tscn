@@ -1,0 +1,53 @@
+[gd_scene format=3 uid="uid://vus0vdnlg4vs"]
+
+[ext_resource type="Texture2D" uid="uid://cgn5uiyf5xyaq" path="res://textures/ship_fill_00.png" id="1_5pyxx"]
+
+[node name="Node2D" type="Node2D" unique_id=198346881]
+
+[node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=1076552337]
+
+[node name="HBoxContainer" type="HBoxContainer" parent="CanvasLayer" unique_id=747415869]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Control" type="Control" parent="CanvasLayer/HBoxContainer" unique_id=1797679927]
+custom_minimum_size = Vector2(256, 0)
+layout_mode = 2
+size_flags_horizontal = 10
+
+[node name="PanelContainer" type="PanelContainer" parent="CanvasLayer/HBoxContainer/Control" unique_id=1963772406]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="CanvasLayer/HBoxContainer/Control/PanelContainer" unique_id=1539503619]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CanvasLayer/HBoxContainer/Control/PanelContainer/MarginContainer" unique_id=2122166841]
+layout_mode = 2
+size_flags_vertical = 0
+
+[node name="HBoxContainer" type="HBoxContainer" parent="CanvasLayer/HBoxContainer/Control/PanelContainer/MarginContainer/VBoxContainer" unique_id=7553481]
+layout_mode = 2
+
+[node name="TextureRect" type="TextureRect" parent="CanvasLayer/HBoxContainer/Control/PanelContainer/MarginContainer/VBoxContainer/HBoxContainer" unique_id=1736995353]
+custom_minimum_size = Vector2(128, 128)
+layout_mode = 2
+texture = ExtResource("1_5pyxx")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Label" type="Label" parent="CanvasLayer/HBoxContainer/Control/PanelContainer/MarginContainer/VBoxContainer/HBoxContainer" unique_id=454624706]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 1

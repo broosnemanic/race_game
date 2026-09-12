@@ -24,7 +24,7 @@ const player_color: Dictionary[int, Color] = {	0: Color("blue"),
 const MOVE_TIME: float = 0.2
 #const SHIP_Z: int = 3
 # Tiling grid image is 256 px with 4x4 squares
-const ORIGINAL_SQUARE_SIZE: float = 256.0 / 4.0
+#const ORIGINAL_SQUARE_SIZE: float = 256.0 / 4.0
 #const ORIGINAL_SQUARE_SIZE: float = 256.0 / 2.0
 const WHITE_TILE: Texture2D = preload("uid://o1lgoog0pi14")
 const LIGHT_TILE: Texture2D = preload("uid://crkmjka1gcgkc")

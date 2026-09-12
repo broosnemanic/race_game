@@ -1,0 +1,85 @@
+[gd_scene format=3 uid="uid://dqr0cnm7olwjp"]
+
+[ext_resource type="Script" uid="uid://ch5nxed1487cd" path="res://scripts/player_label.gd" id="1_ia2e0"]
+[ext_resource type="Texture2D" uid="uid://bj3uk6n1668vn" path="res://textures/ship_side.png" id="2_ia2e0"]
+[ext_resource type="Texture2D" uid="uid://d3okpo45vqohu" path="res://textures/BOT.png" id="3_dkx8g"]
+[ext_resource type="PackedScene" uid="uid://dcv4fohjaxe84" path="res://scenes/health_bar.tscn" id="3_yluy2"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_00wrn"]
+bg_color = Color(0.2, 0.7058824, 0.5372549, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_0whqt"]
+bg_color = Color(0.2, 0.5372549, 0.7058824, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_47hd1"]
+bg_color = Color(0.6666667, 0.79607844, 0.84705883, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_on7gb"]
+bg_color = Color(0.2, 0.5372549, 0.7058824, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_hicil"]
+bg_color = Color(0.6666667, 0.79607844, 0.84705883, 1)
+
+[node name="PanelContainer" type="PanelContainer" unique_id=533402539]
+theme_override_styles/panel = SubResource("StyleBoxFlat_00wrn")
+script = ExtResource("1_ia2e0")
+
+[node name="MarginContainer" type="MarginContainer" parent="." unique_id=1686486528]
+layout_mode = 2
+theme_override_constants/margin_left = 6
+theme_override_constants/margin_top = 6
+theme_override_constants/margin_right = 6
+theme_override_constants/margin_bottom = 6
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer" unique_id=45813706]
+layout_mode = 2
+
+[node name="IconPanel" type="PanelContainer" parent="MarginContainer/HBoxContainer" unique_id=119545007]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_0whqt")
+
+[node name="MarginContainer" type="MarginContainer" parent="MarginContainer/HBoxContainer/IconPanel" unique_id=251847174]
+layout_mode = 2
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_right = 5
+theme_override_constants/margin_bottom = 5
+
+[node name="PanelContainer" type="PanelContainer" parent="MarginContainer/HBoxContainer/IconPanel/MarginContainer" unique_id=13956684]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_47hd1")
+
+[node name="IconTexture" type="TextureRect" parent="MarginContainer/HBoxContainer/IconPanel/MarginContainer/PanelContainer" unique_id=2063738304]
+modulate = Color(0.6431373, 0.4, 0.68235296, 1)
+custom_minimum_size = Vector2(128, 64)
+layout_mode = 2
+texture = ExtResource("2_ia2e0")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="TextPanel" type="PanelContainer" parent="MarginContainer/HBoxContainer" unique_id=2143489487]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_on7gb")
+
+[node name="PanelContainer" parent="MarginContainer/HBoxContainer/TextPanel" unique_id=195685734 instance=ExtResource("3_yluy2")]
+layout_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="MarginContainer/HBoxContainer/TextPanel" unique_id=1262837666]
+visible = false
+custom_minimum_size = Vector2(38, 0)
+layout_mode = 2
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_right = 5
+theme_override_constants/margin_bottom = 5
+
+[node name="PanelContainer" type="PanelContainer" parent="MarginContainer/HBoxContainer/TextPanel/MarginContainer" unique_id=1334143425]
+visible = false
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_hicil")
+
+[node name="BOTLabel" type="TextureRect" parent="MarginContainer/HBoxContainer/TextPanel/MarginContainer/PanelContainer" unique_id=1239998870]
+visible = false
+layout_mode = 2
+texture = ExtResource("3_dkx8g")
