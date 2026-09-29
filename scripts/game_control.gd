@@ -7,10 +7,11 @@ extends Node2D
 var board: Board
 var active_player: int = 0
 var ships: Array[Ship] = []
-var player_order: Array[int] = []			# Order in which players move (also bump priority)
+#var player_order: Array[int] = []			# Order in which players move (also bump priority)
 var ship_ready_report: Array[bool] = []
 var turn_index: int
-const PLAYER_COUNT = 3
+const PLAYER_COUNT: int = 3
+
 
 var ship_inits: Array[ShipInit] = [ShipInit.new(Vector2i(26, 40), Vector2i(0, 0)),
 									ShipInit.new(Vector2i(28, 40), Vector2i(0, 0)),
@@ -82,7 +83,6 @@ func board_setup() -> void:
 # 
 func new_game(a_player_count: int, a_bot_count: int) -> void:
 	ships = []
-	init_player_player_order(a_player_count + a_bot_count)
 	for i_index: int in range(a_player_count + a_bot_count):
 		var t_ship: Ship = ship_prefab.instantiate()
 		var t_init: ShipInit = ship_inits[i_index]
@@ -105,27 +105,30 @@ func new_game(a_player_count: int, a_bot_count: int) -> void:
 		#if i_index == 2:
 			#t_ship.set_velocity(Vector2i(0, -7))
 	if not ships.is_empty():
-		board.on_ship_selected(ships[0])
+		start_turn()
+		#board.on_ship_selected(ships[0])
 	ship_ready_report.resize(ships.size())
 	turn_index = 0
 	board.load_track()
 
 
 # Starting order == player index
-func init_player_player_order(a_total_count: int) -> void:
-	for i_index: int in range(a_total_count):
-		player_order.append(i_index)
+#func init_player_player_order(a_total_count: int) -> void:
+	#for i_index: int in range(a_total_count):
+		#player_order.append(i_index)
 
 
 #
+#func increment_player_order() -> void:
+	#for i_index: int in range(ships.size()):
+		#player_order[i_index] = (player_order[i_index] + 1) % ships.size()
+ 
 func increment_player_order() -> void:
-	for i_index: int in range(ships.size()):
-		player_order[i_index] = (player_order[i_index] + 1) % ships.size()
+	board.increment_first_mover()
  
 
 #
 func start_turn() -> void:
-	print(player_order)
 	board.select_first_ship()
 
 

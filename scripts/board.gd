@@ -19,6 +19,7 @@ var trail_markers: Dictionary[int, Array] = {}			# Key: player; value: array of 
 var _last_mouse_coord: Vector2i = Vector2i.ZERO
 var is_edit_mode: bool
 var track_data: Dictionary[Vector2i, Constants.SQUARE_TYPE] = {}
+var first_mover: int									# Which player moves first this turn?
 
 
 # Unused
@@ -296,13 +297,12 @@ func select_ship(a_ship: Ship) -> void:
 
 # As it says
 func select_first_ship() -> void:
-
-	select_ship(ships[0])
+	select_ship(ships[first_mover])
 
 
 # As it says
 func select_next_ship() -> void:
-	var t_index: int = 0 if selected_ship == null else selected_ship.player + 1
+	var t_index: int = first_mover if selected_ship == null else (selected_ship.player + 1) % ships.size()
 	if t_index < ships.size():
 		select_ship(ships[t_index])
 
@@ -312,7 +312,42 @@ func on_move_selected(a_ship: Ship) -> void:
 	ship_move_selected.emit(a_ship)
 
 
-# TODO: imp non-overlap tidying
+#
+func move_ships_old() -> void:
+	preserve_ship_paths()
+	# Tic count = max move count of all ships this turn
+	var t_tic_count: int = 0
+	for i_ship: Ship in ships:
+		t_tic_count = maxi(t_tic_count, i_ship.descrete_path.count())
+	# Pad all ship paths to have length wqual to `t_tic_count`
+	for i_ship: Ship in ships:
+		var t_path: DescretePath = i_ship.descrete_path
+		t_path.populate_padded_steps(t_tic_count, t_path.coords[0], t_path.coords[-1])
+	for i_ship: Ship in ships:
+	# Loop through tics
+		for i_tic: int in range(0, t_tic_count - 1):
+			var t_coords: Array[Vector2i] = occupied_coords()
+			for i_coord: Vector2i in t_coords:
+				handle_wall_collisions_at(i_coord, i_tic)
+				# Move ship
+			draw_trail_point(coords_from_pos(i_ship.position), i_ship.player)
+			i_ship.point_at_endpoint(i_tic)
+			var t_coord: Vector2i = i_ship.descrete_path.padded_steps[i_tic]
+			if t_coord != Vector2i.ZERO:	# Correcting for an artifact left from intercalated movement
+				move_ship_step(i_ship, t_coord, Constants.MOVE_TIME)
+				# Create await timer with duration of move
+				await get_tree().create_timer(Constants.MOVE_TIME).timeout
+			recenter_ships()
+			t_coords = occupied_coords()
+			for i_coord: Vector2i in t_coords:
+				handle_collisions_at(i_coord)
+			fade_trail_markers()
+	if t_tic_count <= 1:	# Ensures at least on wait interval (to properly sych)
+		await get_tree().create_timer(Constants.MOVE_TIME).timeout
+	all_moves_completed.emit()
+
+
+#
 func move_ships() -> void:
 	preserve_ship_paths()
 	# Tic count = max move count of all ships this turn
@@ -323,36 +358,50 @@ func move_ships() -> void:
 	for i_ship: Ship in ships:
 		var t_path: DescretePath = i_ship.descrete_path
 		t_path.populate_padded_steps(t_tic_count, t_path.coords[0], t_path.coords[-1])
-		#prints(coords_from_pos(i_ship.position), i_ship.velocity)
+	for i_ship: Ship in ships:
 	# Loop through tics
-	for i_tic: int in range(0, t_tic_count - 1):
-		var t_coords: Array[Vector2i] = occupied_coords()
-		for i_coord: Vector2i in t_coords:
-			handle_wall_collisions_at(i_coord, i_tic)
-		for i_ship: Ship in ships:
-			# Move ship
+		for i_tic: int in range(0, t_tic_count - 1):
+			# If current tic would hit a wall or ship -> change velocity
+			handle_wall_collision_at(i_tic, i_ship)
+			handle_ship_collision(i_tic, i_ship)
 			draw_trail_point(coords_from_pos(i_ship.position), i_ship.player)
 			i_ship.point_at_endpoint(i_tic)
-			var t_coord: Vector2i = i_ship.descrete_path.padded_steps[i_tic]
-			move_ship_to(i_ship, t_coord, Constants.MOVE_TIME)
-			# Create await timer with duration of move
-			await get_tree().create_timer(Constants.MOVE_TIME).timeout
-		recenter_ships()
-		t_coords = occupied_coords()
-		for i_coord: Vector2i in t_coords:
-			handle_collisions_at(i_coord)
-		fade_trail_markers()
-		#for i_coord: Vector2i in t_coords:
-			#handle_wall_collisions_at(i_coord)
-		#for i_ship: Ship in ships:
-			#var t_list: Array[Ship] = collision_list(i_ship, i_tic)
-			#if not t_list.is_empty():
-				#swap_ship_velocities(i_ship, t_list[0])
-				#i_ship.point_at_velocity()
-				#t_list[0].point_at_velocity()
-	if t_tic_count <= 1:	# Ensures at least on wait interval (to properly sych)
+			var t_step: Vector2i = i_ship.descrete_path.padded_steps[i_tic]
+			if t_step != Vector2i.ZERO:	# Correcting for an artifact left from intercalated movement
+				var t_destination: Vector2i = ship_coords(i_ship) + t_step
+				if not is_coords_occupied(t_destination):
+					move_ship_step(i_ship, t_step, Constants.MOVE_TIME)
+					# Create await timer with duration of move
+					await get_tree().create_timer(Constants.MOVE_TIME).timeout
+			recenter_ships()
+			#t_coords = occupied_coords()
+			#for i_coord: Vector2i in t_coords:
+				#handle_collisions_at(i_coord)
+			fade_trail_markers()
+	if true: #t_tic_count <= 1:	# Ensures at least on wait interval (to properly sych)
 		await get_tree().create_timer(Constants.MOVE_TIME).timeout
 	all_moves_completed.emit()
+
+
+# Does square at `a_coords` contain a wall or ship?
+func is_coords_occupied(a_coords: Vector2i) -> bool:
+	if ship_at(a_coords) != null: return true
+	return is_wall_at(a_coords)
+
+
+# As it says, with a null safety
+func is_wall_at(a_coords: Vector2i) -> bool:
+	if not squares.has(a_coords): return false
+	var t_square: Square = squares[a_coords]
+	if t_square == null: return false
+	return t_square.is_block
+
+
+# As it says
+func increment_first_mover() -> void:
+	first_mover += 1
+	first_mover = first_mover % ships.size()
+
 
 
 #
@@ -403,6 +452,11 @@ func occupied_coords() -> Array[Vector2i]:
 	return t_dict.keys()
 
 
+# col-row coords from `a_ship.position`
+func ship_coords(a_ship: Ship) -> Vector2i:
+	return coords_from_position(a_ship.position)
+
+
 #
 func ships_at(a_coords: Vector2i) -> Array[Ship]:
 	var t_ships: Array[Ship] = []
@@ -411,6 +465,14 @@ func ships_at(a_coords: Vector2i) -> Array[Ship]:
 		if t_coords == a_coords:
 			t_ships.append(i_ship)
 	return t_ships
+
+
+# Returns first ship at `a_coords`, if any; note there _should_ be at most one
+func ship_at(a_coords: Vector2i) -> Ship:
+	for i_ship: Ship in ships:
+		if ship_coords(i_ship) == a_coords:
+			return i_ship
+	return null
 
 
 # If there ia a collision at `a_coord` shuffle ship velocities
@@ -436,6 +498,44 @@ func handle_collisions_at(a_coords: Vector2i) -> void:
 
 
 #
+func handle_ship_collision(a_tic: int, a_ship: Ship) -> void:
+	var t_coords: Vector2i = ship_coords(a_ship)
+	var t_step: Vector2i = a_ship.descrete_path.padded_steps[a_tic] # Next single step `a_ship` is attempting
+	t_coords += t_step
+	var t_ship: Ship = ship_at(t_coords)
+	if t_ship == null: return
+	swap_ship_velicities(a_ship, t_ship, t_step)
+
+
+# Swaps velocity components of ships which are in direction of collision
+func swap_ship_velicities(a_ship_1: Ship, a_ship_2: Ship, a_direction: Vector2i) -> void:
+	var t_velocity_1: Vector2i = a_ship_1.velocity
+	var t_velocity_2: Vector2i = a_ship_2.velocity
+	if a_direction.x != 0:
+		t_velocity_1.x = a_ship_2.velocity.x
+		t_velocity_2.x = a_ship_1.velocity.x
+	if a_direction.y != 0:
+		t_velocity_1.y = a_ship_2.velocity.y
+		t_velocity_2.y = a_ship_1.velocity.y
+	a_ship_1.set_velocity(t_velocity_1)
+	var t_tic_count: int = a_ship_1.descrete_path.padded_steps.size()
+	a_ship_1.descrete_path.populate_padded_steps(t_tic_count, Vector2i.ZERO, a_ship_1.velocity)
+	a_ship_1.point_at_velocity()
+	a_ship_1.point_ship_at_position(t_velocity_1)
+
+	a_ship_2.set_velocity(t_velocity_2)
+	t_tic_count = a_ship_2.descrete_path.padded_steps.size()
+	a_ship_2.descrete_path.populate_padded_steps(t_tic_count, Vector2i.ZERO, a_ship_2.velocity)
+	a_ship_2.point_at_velocity()
+	a_ship_2.point_ship_at_position(t_velocity_2)
+
+
+
+
+
+
+
+#
 func handle_wall_collisions_at(a_coords: Vector2i, a_tic: int) -> void:
 	if not squares.has(a_coords): return
 	var t_square: Square = squares[a_coords]
@@ -456,6 +556,25 @@ func handle_wall_collisions_at(a_coords: Vector2i, a_tic: int) -> void:
 			t_path.populate_padded_steps(t_tic_count, Vector2i.ZERO, t_ship.velocity)
 			t_ship.point_at_velocity()
 			t_ship.point_ship_at_position(t_new_velocity)
+
+
+# Does not _move_ `a_ship`; a collision results in changes to `a_ship.velocity`
+func handle_wall_collision_at(a_tic: int, a_ship: Ship) -> void:
+	var t_coords: Vector2i = ship_coords(a_ship)
+	if not squares.has(t_coords): return
+	var t_square: Square = squares[t_coords]
+	if t_square == null: return
+	var t_normal: Vector2i = t_square.normal
+	if t_normal == null: return
+	var t_step: Vector2i = a_ship.descrete_path.padded_steps[a_tic]
+	if is_wall_collision(t_square, t_step):
+		var t_new_velocity: Vector2i = -2 * abs(t_normal) * a_ship.velocity + a_ship.velocity
+		a_ship.set_velocity(t_new_velocity)
+		var t_tic_count: int = a_ship.descrete_path.padded_steps.size()
+		var t_path: DescretePath = a_ship.descrete_path
+		t_path.populate_padded_steps(t_tic_count, Vector2i.ZERO, a_ship.velocity)
+		a_ship.point_at_velocity()
+		a_ship.point_ship_at_position(t_new_velocity)
 
 
 # Will stepping _out_ of `a_square` in direction `a_step` result in being inside a wall?
@@ -634,7 +753,7 @@ func remove_old_paths() -> void:
 
 
 # Note this is used to move `a_ship` one square on a valid tic
-func move_ship_to(a_ship: Ship, a_coord: Vector2i, a_duration: float) -> void:
+func move_ship_step(a_ship: Ship, a_coord: Vector2i, a_duration: float) -> void:
 	#var t_end: Vector2 = a_ship.position + Constants.ORIGINAL_SQUARE_SIZE * a_coord
 	var t_end: Vector2 = a_ship.position + square_size * a_coord
 	# Check that we are not trying to move into a wall

@@ -21,6 +21,8 @@ const player_color: Dictionary[int, Color] = {	0: Color("blue"),
 												2: Color("00a07aff")
 											}
 
+const DEFAULT_SHIP_HEALTH: int = 3
+
 const MOVE_TIME: float = 0.2
 #const SHIP_Z: int = 3
 # Tiling grid image is 256 px with 4x4 squares

@@ -7,9 +7,11 @@ signal move_selected(a_ship: Ship)
 @onready var shadow: Sprite2D = $Shadow
 @onready var area: Area2D = $Area
 @onready var marker_prefab: PackedScene = preload("res://scenes/marker.tscn")
+@onready var bubble_particles: CPUParticles2D = $Sprite/BubbleParticles
+@onready var froth_particles: CPUParticles2D = $Sprite/FrothParticles
+
 
 var player: int
-var health: int
 var velocity: Vector2i = Vector2i.ZERO
 var path: Array[Vector2i] = []
 var max_accelerations: Dictionary[Vector2i, int]		# Max acc available in each of 8 cardinal directions
@@ -26,15 +28,14 @@ var square_size: float									# How far is one unit of movment? (set from `boar
 
 const LIGHT_TILE: Texture2D = preload("uid://crkmjka1gcgkc")
 
-
-# Helper to convert to grid coords
-func coords() -> Vector2i:
-	var t_pos: Vector2i = Vector2i.ZERO
-	t_pos.x = (position.x / Constants.ORIGINAL_SQUARE_SIZE) as int
-	t_pos.y = (position.y / Constants.ORIGINAL_SQUARE_SIZE) as int
-	return t_pos
+var health: int:
+	set(a_value):
+		health = a_value
+		if health <= 0:
+			on_destruction()
 
 
+#
 func _ready() -> void:
 	setup_default_acc()
 	marker_pointer = Line2D.new()
@@ -51,11 +52,19 @@ func _ready() -> void:
 	area.area_entered.connect(on_area_entered)
 	area.add_to_group("ship")
 	z_as_relative = false
+	health = Constants.DEFAULT_SHIP_HEALTH
+	froth_particles.color = Constants.player_color[player]
+	bubble_particles.color = Constants.player_color[player]
 
 
 func on_area_entered(a_area: Area2D) -> void:
 	if a_area.is_in_group("ship"):
 		pass
+
+
+# Actions to perform when health reaches zero
+func on_destruction() -> void:
+	prints(player, "destroyed")
 
 
 func setup_arrowhead() -> void:
@@ -241,3 +250,9 @@ func clear_line() -> void:
 	for i_square: Sprite2D in line_squares:
 		i_square.queue_free()
 	line_squares = []
+
+
+# 
+func set_particles_visible(a_is_visible: bool) -> void:
+	bubble_particles.emitting = a_is_visible
+	froth_particles.emitting = a_is_visible

@@ -4,19 +4,60 @@
 [ext_resource type="Texture2D" uid="uid://bocan8kaotgl1" path="res://textures/ship_outline_00.png" id="2_4tobq"]
 [ext_resource type="Texture2D" uid="uid://cgn5uiyf5xyaq" path="res://textures/ship_fill_00.png" id="3_tfsc7"]
 
+[sub_resource type="Curve" id="Curve_4tobq"]
+_data = [Vector2(0.0037593916, 1), 0.0, 0.0, 0, 0, Vector2(0.5300752, 0.7653061), 0.0, 0.0, 0, 0, Vector2(0.9962406, 0.040816307), 0.0, 0.0, 0, 0]
+point_count = 3
+
+[sub_resource type="Gradient" id="Gradient_tfsc7"]
+colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 0)
+
 [sub_resource type="CircleShape2D" id="CircleShape2D_2gnfn"]
 radius = 31.780497
 
 [node name="Ship" type="Node2D" unique_id=1009972092]
 script = ExtResource("1_2gnfn")
 
+[node name="Shadow" type="Sprite2D" parent="." unique_id=832357521]
+position = Vector2(10, 10)
+scale = Vector2(0.5, 0.5)
+texture = ExtResource("3_tfsc7")
+
 [node name="Sprite" type="Sprite2D" parent="." unique_id=1061569613]
 scale = Vector2(0.5, 0.5)
 texture = ExtResource("2_4tobq")
 
-[node name="Shadow" type="Sprite2D" parent="." unique_id=832357521]
-scale = Vector2(0.5, 0.5)
-texture = ExtResource("3_tfsc7")
+[node name="BubbleParticles" type="CPUParticles2D" parent="Sprite" unique_id=121379199]
+position = Vector2(0, 106)
+scale = Vector2(2, 2)
+amount = 12
+lifetime = 2.5
+emission_shape = 3
+emission_rect_extents = Vector2(9, 1)
+direction = Vector2(0, 1)
+spread = 10.0
+gravity = Vector2(0, 0)
+initial_velocity_min = 25.0
+initial_velocity_max = 25.0
+scale_amount_min = 4.0
+scale_amount_max = 5.0
+scale_amount_curve = SubResource("Curve_4tobq")
+color_ramp = SubResource("Gradient_tfsc7")
+
+[node name="FrothParticles" type="CPUParticles2D" parent="Sprite" unique_id=941110671]
+position = Vector2(0, 99.68)
+scale = Vector2(2, 2)
+amount = 48
+lifetime = 0.4
+emission_shape = 3
+emission_rect_extents = Vector2(24, 1)
+direction = Vector2(0, 1)
+spread = 0.0
+gravity = Vector2(0, 0)
+initial_velocity_min = 25.0
+initial_velocity_max = 25.0
+scale_amount_min = 2.0
+scale_amount_max = 2.0
+color_ramp = SubResource("Gradient_tfsc7")
 
 [node name="Area" type="Area2D" parent="." unique_id=677697202 groups=["ship"]]
 

@@ -1,0 +1,19 @@
+[gd_scene format=3 uid="uid://dd5k661cnbiqy"]
+
+[ext_resource type="Script" uid="uid://dsbp68cv53dh4" path="res://scripts/direction_wheel.gd" id="1_j28b1"]
+[ext_resource type="Texture2D" uid="uid://b0uakq4kdwuvh" path="res://textures/direction_wheel_pointing_tilted.png" id="2_j28b1"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_7dyth"]
+radius = 129.40247
+
+[node name="Node2D" type="Node2D" unique_id=1451362840]
+
+[node name="DirectionWheel" type="Area2D" parent="." unique_id=1065397687]
+position = Vector2(500, 500)
+script = ExtResource("1_j28b1")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="DirectionWheel" unique_id=881731469]
+shape = SubResource("CircleShape2D_7dyth")
+
+[node name="Sprite" type="Sprite2D" parent="DirectionWheel" unique_id=555114932]
+texture = ExtResource("2_j28b1")
