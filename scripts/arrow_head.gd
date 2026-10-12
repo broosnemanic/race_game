@@ -27,6 +27,7 @@ func point_at_angle(a_radians: float) -> void:
 	rotation = a_radians
 
 
+# Orient `this` to point along direction defined by `a_start` and `a_end`
 func point_along_coords(a_start: Vector2, a_end: Vector2) -> void:
 	rotation = head_rotation(a_start, a_end)
 	queue_redraw()

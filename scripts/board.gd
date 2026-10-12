@@ -20,6 +20,7 @@ var _last_mouse_coord: Vector2i = Vector2i.ZERO
 var is_edit_mode: bool
 var track_data: Dictionary[Vector2i, Constants.SQUARE_TYPE] = {}
 var first_mover: int									# Which player moves first this turn?
+var player_order: Array[int] = []
 
 
 # Unused
@@ -238,7 +239,7 @@ func display_track() -> void:
 
 # As it says
 func get_mouse_coord() -> Vector2i:
-	return coords_from_pos(grid_rect.get_local_mouse_position())
+	return Utilities.coords_from_pos(grid_rect.get_local_mouse_position())
 
 
 # Size of one square in pixels
@@ -265,7 +266,7 @@ func center_camera() -> void:
 
 # Position snapped to center of nearest square
 func snapped_pos(a_pos: Vector2) -> Vector2:
-	return pos_from_coords(coords_from_pos(a_pos))
+	return pos_from_coords(Utilities.coords_from_pos(a_pos))
 
 
 # As it says
@@ -282,12 +283,22 @@ func coords_from_pos(a_pos: Vector2) -> Vector2i:
 	return Vector2i(floori(t_x / square_size), floori(t_y / square_size))
 
 
+# Grid coords from position on board
+#func coords_from_position(a_pos: Vector2) -> Vector2i:
+	##var t_x: int = floori(a_pos.x / Constants.ORIGINAL_SQUARE_SIZE as float)
+	##var t_y: int = floori(a_pos.y / Constants.ORIGINAL_SQUARE_SIZE as float)
+	#var t_x: int = floori(a_pos.x / square_size)
+	#var t_y: int = floori(a_pos.y / square_size)
+	#return Vector2i(t_x, t_y)
+
+
 # Adds `a_ship` as a child of `grid_rect and connects `on_move_selected`
 func add_ship(a_ship: Ship) -> void:
 	ships.append(a_ship)
 	grid_rect.add_child(a_ship)
 	a_ship.z_index = Constants.SHIP_Z_INDEX + a_ship.player
 	a_ship.move_selected.connect(on_move_selected)
+	a_ship.direction_selected.connect(on_direction_selected)
 
 
 # As it says
@@ -307,8 +318,26 @@ func select_next_ship() -> void:
 		select_ship(ships[t_index])
 
 
+# ith player in current player movement order
+func ith_mover(a_ith: int) -> int:
+	return (a_ith + first_mover) % ships.size()
+
+
+#
+func set_player_order(a_first_mover: int) -> void:
+	player_order.resize(ships.size())
+	for i_index: int in range(ships.size()):
+		player_order[i_index] = ith_mover(i_index)
+	print_debug(player_order)
+
+
 # Signal subscribed to by `GameControl`
 func on_move_selected(a_ship: Ship) -> void:
+	ship_move_selected.emit(a_ship)
+
+
+# Signal subscribed to by `GameControl`
+func on_direction_selected(a_ship: Ship) -> void:
 	ship_move_selected.emit(a_ship)
 
 
@@ -330,7 +359,7 @@ func move_ships_old() -> void:
 			for i_coord: Vector2i in t_coords:
 				handle_wall_collisions_at(i_coord, i_tic)
 				# Move ship
-			draw_trail_point(coords_from_pos(i_ship.position), i_ship.player)
+			draw_trail_point(Utilities.coords_from_pos(i_ship.position), i_ship.player)
 			i_ship.point_at_endpoint(i_tic)
 			var t_coord: Vector2i = i_ship.descrete_path.padded_steps[i_tic]
 			if t_coord != Vector2i.ZERO:	# Correcting for an artifact left from intercalated movement
@@ -358,13 +387,16 @@ func move_ships() -> void:
 	for i_ship: Ship in ships:
 		var t_path: DescretePath = i_ship.descrete_path
 		t_path.populate_padded_steps(t_tic_count, t_path.coords[0], t_path.coords[-1])
-	for i_ship: Ship in ships:
+	#for i_ship: Ship in ships:
+	print_debug(player_order)
+	for i_index: int in player_order:
+		var i_ship: Ship = ships[i_index]
 	# Loop through tics
 		for i_tic: int in range(0, t_tic_count - 1):
 			# If current tic would hit a wall or ship -> change velocity
 			handle_wall_collision_at(i_tic, i_ship)
 			handle_ship_collision(i_tic, i_ship)
-			draw_trail_point(coords_from_pos(i_ship.position), i_ship.player)
+			draw_trail_point(Utilities.coords_from_pos(i_ship.position), i_ship.player)
 			i_ship.point_at_endpoint(i_tic)
 			var t_step: Vector2i = i_ship.descrete_path.padded_steps[i_tic]
 			if t_step != Vector2i.ZERO:	# Correcting for an artifact left from intercalated movement
@@ -401,6 +433,8 @@ func is_wall_at(a_coords: Vector2i) -> bool:
 func increment_first_mover() -> void:
 	first_mover += 1
 	first_mover = first_mover % ships.size()
+	set_player_order(first_mover)
+	pass
 
 
 
@@ -437,7 +471,7 @@ func null_trimmed_array(a_array: Array) -> Array:
 func recenter_ships() -> void:
 	for i_ship: Ship in ships:
 		var t_pos: Vector2 = i_ship.position
-		t_pos = pos_from_coords(coords_from_pos(t_pos))
+		t_pos = pos_from_coords(Utilities.coords_from_pos(t_pos))
 		i_ship.position = t_pos 
 
 
@@ -447,21 +481,21 @@ func recenter_ships() -> void:
 func occupied_coords() -> Array[Vector2i]:
 	var t_dict: Dictionary[Vector2i, Vector2i] = {}
 	for i_ship: Ship in ships:
-		var t_coords: Vector2i = coords_from_position(i_ship.position)
+		var t_coords: Vector2i = Utilities.coords_from_pos(i_ship.position)
 		t_dict[t_coords] = t_coords
 	return t_dict.keys()
 
 
 # col-row coords from `a_ship.position`
 func ship_coords(a_ship: Ship) -> Vector2i:
-	return coords_from_position(a_ship.position)
+	return Utilities.coords_from_pos(a_ship.position)
 
 
 #
 func ships_at(a_coords: Vector2i) -> Array[Ship]:
 	var t_ships: Array[Ship] = []
 	for i_ship: Ship in ships:
-		var t_coords: Vector2i = coords_from_position(i_ship.position)
+		var t_coords: Vector2i = Utilities.coords_from_pos(i_ship.position)
 		if t_coords == a_coords:
 			t_ships.append(i_ship)
 	return t_ships
@@ -629,11 +663,11 @@ func swap_ship_velocities(a_ship_1: Ship, a_ship_2: Ship) -> void:
 # List of ships at same coords as `a_ship` at time `a_tic`
 func collision_list(a_ship: Ship, a_tic: int) -> Array[Ship]:
 	var t_list: Array[Ship] = []
-	var t_coord: Vector2i = coords_from_position(a_ship.position)	# Current position
+	var t_coord: Vector2i = Utilities.coords_from_pos(a_ship.position)	# Current position
 	t_coord += a_ship.descrete_path.padded_steps[a_tic]
 	for i_ship: Ship in ships:
 		if i_ship == a_ship: continue	# If current move is Zero we could match with a_ship
-		if coords_from_position(i_ship.position) == t_coord:
+		if Utilities.coords_from_pos(i_ship.position) == t_coord:
 			t_list.append(i_ship)
 	return t_list
 
@@ -665,20 +699,11 @@ func _process_collisions(a_players: ArrayInt) -> void:
 func collision_report() -> Dictionary[Vector2i, ArrayInt]:
 	var t_report: Dictionary[Vector2i, ArrayInt] = {}
 	for i_ship: Ship in ships:
-			var t_coord: Vector2i = coords_from_position(i_ship.position)
+			var t_coord: Vector2i = Utilities.coords_from_pos(i_ship.position)
 			# TODO: we are looking at steps but should be looking at board coords
 			if not t_report.has(t_coord): t_report[t_coord] = ArrayInt.new()
 			t_report[t_coord].i.append(i_ship.player)
 	return t_report
-
-
-# Grid coords from position on board
-func coords_from_position(a_pos: Vector2) -> Vector2i:
-	#var t_x: int = floori(a_pos.x / Constants.ORIGINAL_SQUARE_SIZE as float)
-	#var t_y: int = floori(a_pos.y / Constants.ORIGINAL_SQUARE_SIZE as float)
-	var t_x: int = floori(a_pos.x / square_size)
-	var t_y: int = floori(a_pos.y / square_size)
-	return Vector2i(t_x, t_y)
 
 
 
@@ -767,7 +792,7 @@ func move_ship_step(a_ship: Ship, a_coord: Vector2i, a_duration: float) -> void:
 
 #
 func is_block_at_pos(a_pos: Vector2) -> bool:
-	return  is_block_at_coord(coords_from_pos(a_pos))
+	return  is_block_at_coord(Utilities.coords_from_pos(a_pos))
 
 
 #
@@ -782,6 +807,7 @@ func is_block_at_coord(a_coord: Vector2i) -> bool:
 func on_ship_selected(a_ship: Ship) -> void:
 	selected_ship = a_ship
 	a_ship.create_markers()
+	a_ship.direction_wheel.visible = true
 
 
 #

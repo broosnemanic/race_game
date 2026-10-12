@@ -7,7 +7,6 @@ extends Node2D
 var board: Board
 var active_player: int = 0
 var ships: Array[Ship] = []
-#var player_order: Array[int] = []			# Order in which players move (also bump priority)
 var ship_ready_report: Array[bool] = []
 var turn_index: int
 const PLAYER_COUNT: int = 3
@@ -34,7 +33,7 @@ func _ready() -> void:
 	board_container.add_child(board)
 	await get_tree().process_frame
 	#board.square_size = 64.0
-	board.square_size = 128.0
+	board.square_size = Constants.SQUARE_SIZE
 	board.grid_size = Vector2i(64, 64)
 	board.center_camera()
 	board.board_camera.zoom = Vector2(0.25, 0.25)
@@ -110,19 +109,10 @@ func new_game(a_player_count: int, a_bot_count: int) -> void:
 	ship_ready_report.resize(ships.size())
 	turn_index = 0
 	board.load_track()
+	board.set_player_order(0)
 
 
-# Starting order == player index
-#func init_player_player_order(a_total_count: int) -> void:
-	#for i_index: int in range(a_total_count):
-		#player_order.append(i_index)
-
-
-#
-#func increment_player_order() -> void:
-	#for i_index: int in range(ships.size()):
-		#player_order[i_index] = (player_order[i_index] + 1) % ships.size()
- 
+# 
 func increment_player_order() -> void:
 	board.increment_first_mover()
  
@@ -148,8 +138,8 @@ func on_ship_move_selected(a_ship: Ship) -> void:
 	if is_all_ships_ready():
 		board.move_ships()
 		reset_ship_ready_report()
-		increment_player_order()
 		await board.all_moves_completed
+		increment_player_order()
 		start_turn()
 	else:
 		board.select_next_ship()

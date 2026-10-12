@@ -2,6 +2,7 @@ extends Node2D
 class_name Ship
 
 signal move_selected(a_ship: Ship)
+signal direction_selected(a_ship: Ship)
 
 @onready var sprite: Sprite2D = $Sprite
 @onready var shadow: Sprite2D = $Shadow
@@ -9,6 +10,7 @@ signal move_selected(a_ship: Ship)
 @onready var marker_prefab: PackedScene = preload("res://scenes/marker.tscn")
 @onready var bubble_particles: CPUParticles2D = $Sprite/BubbleParticles
 @onready var froth_particles: CPUParticles2D = $Sprite/FrothParticles
+@onready var direction_wheel: DirectionWheel = $DirectionWheel
 
 
 var player: int
@@ -55,6 +57,8 @@ func _ready() -> void:
 	health = Constants.DEFAULT_SHIP_HEALTH
 	froth_particles.color = Constants.player_color[player]
 	bubble_particles.color = Constants.player_color[player]
+	direction_wheel.direction_selected.connect(on_direction_selected)
+	direction_wheel.direction_hovered.connect(on_hovered_direction_changed)
 
 
 func on_area_entered(a_area: Area2D) -> void:
@@ -98,6 +102,7 @@ func _mouse_exit() -> void:
 
 
 func create_markers() -> void:
+	return	# TODO: for debugging
 	markers = []
 	add_new_marker(Vector2i.ZERO)
 	for i_dir: Vector2i in Constants.directions:
@@ -148,6 +153,35 @@ func point_at_marker(a_marker: Marker) -> void:
 	path = descrete_path.coords
 	# Point ship at marker
 	point_ship_at_position(a_marker.position)
+
+
+func on_hovered_direction_changed(a_direction: Vector2i) -> void:
+	var t_coord: Vector2i = a_direction + velocity
+	point_at_coord(t_coord)
+	
+	clear_line()
+	descrete_path.clear_line()
+	descrete_path = DescretePath.new()
+	descrete_path.color = Constants.player_color[player]
+	descrete_path.square_size = square_size
+	add_child(descrete_path)
+	descrete_path.draw_from_endpoints(Vector2i.ZERO, t_coord)
+	path = descrete_path.coords
+	# Point ship at marker
+	point_ship_at_position(Utilities.pos_from_coords(t_coord))
+
+
+
+# Set `marker_pointer` to point at center of square at `a_coord`
+func point_at_coord(a_coord: Vector2i) -> void:
+	point_at_position(Utilities.pos_from_coords(a_coord))
+
+
+# Set `marker_pointer` to point at `a_pos`
+func point_at_position(a_pos: Vector2) -> void:
+	marker_pointer.points[1] = a_pos
+	marker_arrow.position = a_pos
+	marker_arrow.point_along_coords(Vector2.ZERO, a_pos)
 
 
 #
@@ -201,12 +235,6 @@ func endpoint_from_tic(a_tic: int) -> Vector2i:
 	
 	
 
-func point_at_position(a_pos: Vector2) -> void:
-	marker_pointer.points[1] = a_pos
-	marker_arrow.position = a_pos
-	marker_arrow.point_along_coords(Vector2.ZERO, a_pos)
-
-
 
 
 #func display_markers(a_is_displayed: bool) -> void:
@@ -224,6 +252,13 @@ func on_marker_selected(a_marker: Marker) -> void:
 	move_selected.emit(self)
 	destroy_markers()
 
+
+func on_direction_selected(a_direction: Vector2i) -> void:
+	velocity += a_direction
+	moves.append(velocity)
+	path = descrete_path.coords
+	direction_selected.emit(self)
+	direction_wheel.visible = false
 
 func max_acc_at(a_dir: Vector2i) -> Vector2i:
 	if max_accelerations.has(a_dir):
