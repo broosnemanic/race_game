@@ -1,7 +1,7 @@
 extends Node2D
 class_name ArrowHead
 
-var color: Color = Color.RED
+var color: Color = Color.WHITE
 var width: float = 100.0		# X direction
 var height: float = 150.0		# Y-direction
 var angle: float = 0.0			# Zero == pointing up

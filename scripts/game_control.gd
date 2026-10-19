@@ -12,11 +12,13 @@ var turn_index: int
 const PLAYER_COUNT: int = 3
 
 
+# Ship inits for testing
 var ship_inits: Array[ShipInit] = [ShipInit.new(Vector2i(26, 40), Vector2i(0, 0)),
 									ShipInit.new(Vector2i(28, 40), Vector2i(0, 0)),
 									ShipInit.new(Vector2i(30, 40), Vector2i(0, 0)),
 									ShipInit.new(Vector2i(32, 40), Vector2i(0, 0))]
 
+# Object to hold ship starting data
 class ShipInit:
 	func _init(a_position: Vector2i, a_velocity: Vector2i) -> void:
 		position = a_position
@@ -25,14 +27,12 @@ class ShipInit:
 	var velocity: Vector2i
 
 
-
-
+# 
 func _ready() -> void:
 	#board_setup()
 	board = board_prefab.instantiate()
 	board_container.add_child(board)
 	await get_tree().process_frame
-	#board.square_size = 64.0
 	board.square_size = Constants.SQUARE_SIZE
 	board.grid_size = Vector2i(64, 64)
 	board.center_camera()
@@ -42,13 +42,13 @@ func _ready() -> void:
 	new_game(PLAYER_COUNT, 0)
 	#activate_board_edit_mode()
 	await get_tree().process_frame
+	#Engine.time_scale = 0.25
 
 
-# 
+# As it says
 func activate_board_edit_mode() -> void:
 	new_game(0, 0)
 	board.is_edit_mode = true
-
 
 
 #
@@ -93,43 +93,25 @@ func new_game(a_player_count: int, a_bot_count: int) -> void:
 		t_ship.shadow.modulate.a = 0.25
 		t_ship.z_index = Constants.SHIP_Z_INDEX
 		t_ship.square_size = board.square_size
-		#t_ship.position = t_init.position * Constants.ORIGINAL_SQUARE_SIZE
+		t_ship.setup_arrowhead()
 		t_ship.position = t_init.position * board.square_size
 		t_ship.set_velocity(t_init.velocity)
-		#t_ship.position = start_pos_from_player(t_ship.player)
-		#if i_index == 0:
-			#t_ship.set_velocity(Vector2i(0, -5))
-		#if i_index == 1:
-			#t_ship.set_velocity(Vector2i(-4, -7))
-		#if i_index == 2:
-			#t_ship.set_velocity(Vector2i(0, -7))
 	if not ships.is_empty():
 		start_turn()
-		#board.on_ship_selected(ships[0])
 	ship_ready_report.resize(ships.size())
 	turn_index = 0
 	board.load_track()
 	board.set_player_order(0)
 
 
-# 
+# 1st -> last; 2nd -> 1st; etc
 func increment_player_order() -> void:
 	board.increment_first_mover()
  
 
-#
+# As it says
 func start_turn() -> void:
 	board.select_first_ship()
-
-
-# Placeholder func to distribute starting positions
-func start_pos_from_player(a_player: int) -> Vector2:
-	var t_coord: Vector2i = Vector2i(1 * a_player + 26, 40)
-	if a_player == 0:
-		t_coord = Vector2i(32, 27)
-		ships[0].set_velocity(Vector2i(3, -2))
-	
-	return board.pos_from_coords(t_coord)# + board.board_camera.offset
 
 
 # Check if all ships are ready; move all ships or select next ship

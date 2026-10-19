@@ -41,6 +41,7 @@ func clear_line() -> void:
 	point_markers = []
 
 
+# Display sprites representing points in `coords`
 func draw_points(a_coords: Array[Vector2i]) -> void:
 	clear_line()
 	coords = a_coords
@@ -54,9 +55,9 @@ func draw_points(a_coords: Array[Vector2i]) -> void:
 		#t_sprite.position = i_coord * Constants.ORIGINAL_SQUARE_SIZE
 		t_sprite.position = i_coord * square_size
 		point_markers.append(t_sprite)
-	if not point_markers.is_empty():
-		point_markers.back().modulate.a = 1.0
-		point_markers.back().scale = 0.25 * Vector2i.ONE
+	#if not point_markers.is_empty():
+		#point_markers.back().modulate.a = 1.0
+		#point_markers.back().scale = 0.25 * Vector2i.ONE
 
 
 func draw_from_endpoints(a_start: Vector2i, a_end: Vector2i) -> void:

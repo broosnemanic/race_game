@@ -19,7 +19,7 @@ const PI_DIV_8: float = PI / 8.0
 const PI_DIV_4: float = PI / 4.0
 const MIN_WAIT: float = 0.1									# Minimum wait time between mouse position evaluations
 const MIN_DIST: float = 0.1									# Minimum distance between mouse positions to register as a change
-const CENTRAL_DIST: float = 64.0							# Defines area that registers as zero accelaration
+const CENTRAL_DIST: float = 32.0							# Defines area that registers as zero accelaration
 
 
 

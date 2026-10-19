@@ -42,15 +42,15 @@ func _ready() -> void:
 	setup_default_acc()
 	marker_pointer = Line2D.new()
 	marker_pointer.points = [Vector2.ZERO, Vector2.ZERO]
-	marker_pointer.modulate = Constants.player_color[player]
+	#marker_pointer.modulate = Constants.player_color[player]
 	marker_pointer.z_as_relative = true
 	marker_pointer.z_index = -1
-	marker_pointer.width = 5
+	marker_pointer.width = Constants.POINTER_WIDTH
 	add_child(marker_pointer)
 	area.mouse_entered.connect(func()->void:is_mouse_over = true)
 	area.mouse_exited.connect(func()->void:is_mouse_over = false)
 	sprite.modulate = Constants.player_color[player]
-	setup_arrowhead()
+	#setup_arrowhead()
 	area.area_entered.connect(on_area_entered)
 	area.add_to_group("ship")
 	z_as_relative = false
@@ -73,10 +73,12 @@ func on_destruction() -> void:
 
 func setup_arrowhead() -> void:
 	marker_arrow = ArrowHead.new()
-	marker_arrow.width = 20.0
-	marker_arrow.height = 20.0
-	marker_arrow.offset = Vector2(0.0, 20.0)
+	marker_arrow.width = Constants.ARROW_WIDTH
+	marker_arrow.height = Constants.ARROW_HEIGHT
+	marker_arrow.offset = Vector2(0.0, 0.0 * Constants.ARROW_HEIGHT)
+	#marker_arrow.color = shadow.modulate
 	marker_pointer.add_child(marker_arrow)
+	marker_pointer.modulate = shadow.modulate
 
 
 #func handle_marker_pointer() -> void:
@@ -179,8 +181,9 @@ func point_at_coord(a_coord: Vector2i) -> void:
 
 # Set `marker_pointer` to point at `a_pos`
 func point_at_position(a_pos: Vector2) -> void:
-	marker_pointer.points[1] = a_pos
-	marker_arrow.position = a_pos
+	var t_factor: float = (a_pos.length() - 0.25 * Constants.SQUARE_SIZE) / a_pos.length()
+	marker_pointer.points[1] = t_factor * a_pos
+	marker_arrow.position = t_factor * a_pos
 	marker_arrow.point_along_coords(Vector2.ZERO, a_pos)
 
 

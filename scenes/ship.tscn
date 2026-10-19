@@ -61,6 +61,7 @@ scale_amount_max = 2.0
 color_ramp = SubResource("Gradient_tfsc7")
 
 [node name="DirectionWheel" parent="." unique_id=1065397687 instance=ExtResource("4_tfsc7")]
+visible = false
 
 [node name="Area" type="Area2D" parent="." unique_id=677697202 groups=["ship"]]
 

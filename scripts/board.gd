@@ -52,6 +52,14 @@ func _input(event: InputEvent) -> void:
 				save_track()
 			if t_event.keycode == KEY_L:
 				load_track()
+			if t_event.keycode == KEY_UP:
+				board_camera.offset += 10.0 * Vector2.UP
+			if t_event.keycode == KEY_DOWN:
+				board_camera.offset += 10.0 * Vector2.DOWN
+			if t_event.keycode == KEY_LEFT:
+				board_camera.offset += 10.0 * Vector2.LEFT
+			if t_event.keycode == KEY_RIGHT:
+				board_camera.offset += 10.0 * Vector2.RIGHT
 	if event is InputEventMouseButton:
 		var t_zoom: float = 0.01
 		var t_event: InputEventMouseButton = event
@@ -243,12 +251,7 @@ func get_mouse_coord() -> Vector2i:
 
 
 # Size of one square in pixels
-var square_size: float:
-	set(a_size):
-		square_size = a_size
-		# TODO: is this necessary?
-		#var t_scale: float = a_size / Constants.ORIGINAL_SQUARE_SIZE
-		#grid_rect.scale = Vector2(t_scale, t_scale)
+var square_size: float
 
 
 # Size in squares
@@ -262,11 +265,12 @@ var grid_size: Vector2i:
 # As it says
 func center_camera() -> void:
 	board_camera.offset = Vector2(0.5 * grid_rect.size.x, 0.5 * grid_rect.size.y)
+	board_camera.offset = Vector2(4096.0, 4626.0)
 
 
 # Position snapped to center of nearest square
-func snapped_pos(a_pos: Vector2) -> Vector2:
-	return pos_from_coords(Utilities.coords_from_pos(a_pos))
+#func snapped_pos(a_pos: Vector2) -> Vector2:
+	#return pos_from_coords(Utilities.coords_from_pos(a_pos))
 
 
 # As it says
