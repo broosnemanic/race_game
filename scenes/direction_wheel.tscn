@@ -4,7 +4,7 @@
 [ext_resource type="Texture2D" uid="uid://b0uakq4kdwuvh" path="res://textures/direction_wheel_pointing_tilted.png" id="2_j28b1"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_7dyth"]
-radius = 129.40247
+radius = 188.06648
 
 [node name="DirectionWheel" type="Area2D" unique_id=1065397687]
 script = ExtResource("1_j28b1")

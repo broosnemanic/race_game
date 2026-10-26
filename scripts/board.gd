@@ -268,11 +268,6 @@ func center_camera() -> void:
 	board_camera.offset = Vector2(4096.0, 4626.0)
 
 
-# Position snapped to center of nearest square
-#func snapped_pos(a_pos: Vector2) -> Vector2:
-	#return pos_from_coords(Utilities.coords_from_pos(a_pos))
-
-
 # As it says
 func pos_from_coords(a_coords: Vector2i) -> Vector2:
 	var t_x: float = a_coords.x as float * square_size
@@ -287,21 +282,11 @@ func coords_from_pos(a_pos: Vector2) -> Vector2i:
 	return Vector2i(floori(t_x / square_size), floori(t_y / square_size))
 
 
-# Grid coords from position on board
-#func coords_from_position(a_pos: Vector2) -> Vector2i:
-	##var t_x: int = floori(a_pos.x / Constants.ORIGINAL_SQUARE_SIZE as float)
-	##var t_y: int = floori(a_pos.y / Constants.ORIGINAL_SQUARE_SIZE as float)
-	#var t_x: int = floori(a_pos.x / square_size)
-	#var t_y: int = floori(a_pos.y / square_size)
-	#return Vector2i(t_x, t_y)
-
-
 # Adds `a_ship` as a child of `grid_rect and connects `on_move_selected`
 func add_ship(a_ship: Ship) -> void:
 	ships.append(a_ship)
 	grid_rect.add_child(a_ship)
 	a_ship.z_index = Constants.SHIP_Z_INDEX + a_ship.player
-	a_ship.move_selected.connect(on_move_selected)
 	a_ship.direction_selected.connect(on_direction_selected)
 
 
@@ -417,6 +402,12 @@ func move_ships() -> void:
 	if true: #t_tic_count <= 1:	# Ensures at least on wait interval (to properly sych)
 		await get_tree().create_timer(Constants.MOVE_TIME).timeout
 	all_moves_completed.emit()
+
+
+#
+func move_ship(a_ship: Ship) -> void:
+	pass
+
 
 
 # Does square at `a_coords` contain a wall or ship?
@@ -810,7 +801,7 @@ func is_block_at_coord(a_coord: Vector2i) -> bool:
 # Actions to perform when `a_ship` is selected
 func on_ship_selected(a_ship: Ship) -> void:
 	selected_ship = a_ship
-	a_ship.create_markers()
+	#a_ship.create_markers()
 	a_ship.direction_wheel.visible = true
 
 

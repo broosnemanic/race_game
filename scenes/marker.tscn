@@ -1,13 +1,54 @@
 [gd_scene format=3 uid="uid://cc4402p1konva"]
 
-[ext_resource type="Script" uid="uid://da527p0dgh0ca" path="res://scripts/marker.gd" id="1_plg8q"]
 [ext_resource type="Texture2D" uid="uid://cf85b3rajkbrk" path="res://textures/target_marker.png" id="2_ukjwh"]
+
+[sub_resource type="GDScript" id="GDScript_hy4mp"]
+script/source = "extends Area2D
+class_name Marker
+
+#signal selected(a_marker: Marker)
+#
+#
+#
+#@onready var target_marker: Sprite2D = $TargetMarker
+#
+#var coord: Vector2i			# Relative to parent ship
+#var is_enabled: bool = true
+#var is_mouse_over: bool
+#
+#func _ready() -> void:
+	#target_marker.modulate = Constants.MARKER_COLOR
+	#target_marker.scale = Vector2(0.5, 0.5)
+#
+#
+#func _mouse_enter() -> void:
+	#is_mouse_over = true
+#
+#
+#func _mouse_exit() -> void:
+	#is_mouse_over = false
+#
+#
+#func _input(event: InputEvent) -> void:
+	#if not is_mouse_over: return
+	#if event is InputEventMouseButton:
+		#var t_even: InputEventMouseButton = event as InputEventMouseButton
+		#if t_even.button_index == MOUSE_BUTTON_LEFT:
+			#if t_even.pressed:
+				#selected.emit(self)
+#
+#
+#func set_enabled(a_is_enabled: bool) -> void:
+	#target_marker.visible = a_is_enabled
+	#is_enabled = a_is_enabled
+	#
+"
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_ysii1"]
 size = Vector2(120, 120)
 
 [node name="Marker" type="Area2D" unique_id=1114404046]
-script = ExtResource("1_plg8q")
+script = SubResource("GDScript_hy4mp")
 
 [node name="TargetMarker" type="Sprite2D" parent="." unique_id=974626876]
 texture = ExtResource("2_ukjwh")
